@@ -1,11 +1,10 @@
-import express from "express";
-import multer from "multer";
-import verifyToken from "../middleware/verifyToken.js";
-import { uploadProfilePic } from "../controllers/profilePicController.js";
+import express from 'express';
+import upload from '../middleware/cloudinaryStorage.js';
+import { uploadProfilePic } from '../controllers/profilePicController.js';
+import verifyToken from '../middleware/verifyToken.js';
 
 const router = express.Router();
-const upload = multer({ storage: multer.memoryStorage() });
 
-router.post("/upload-profile-pic", verifyToken, upload.single("file"), uploadProfilePic);
+router.post('/upload-profile-pic', verifyToken, upload.single('profilePic'), uploadProfilePic);
 
 export default router;

@@ -1,73 +1,72 @@
+import { useState, useContext } from 'react';
 import {
   Avatar,
-  Box,
   Button,
   CircularProgress,
+  Snackbar,
   Typography,
-} from "@mui/material";
-import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
-import { useContext, useRef, useState } from "react";
-import axios from "../api/axios";
-import { AuthContext } from "../context/AuthContext";
+} from '@mui/material';
+import axios from '../api/axios';
+import { AuthContext } from '../context/AuthContext';
 
 const Profile = () => {
   const { user, setUser } = useContext(AuthContext);
-  const fileInputRef = useRef();
+  const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '' });
 
-  const handleUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const handleUpload = async () => {
+    if (!image) return;
 
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append('profilePic', image);
 
-    setLoading(true);
     try {
-      const res = await axios.post("/profile/upload-profile-pic", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        withCredentials: true,
-      });
-
-      setUser((prev) => ({
-        ...prev,
-        profilePic: res.data.profilePic,
-      }));
-    } catch (err) {
-      console.error("Upload failed:", err);
+      setLoading(true);
+      const res = await axios.post('/profile/upload-profile-pic', formData);
+      setUser((prev) => ({ ...prev, profilePic: res.data.profilePic }));
+      setSnackbar({ open: true, message: 'Profile picture updated!' });
+    } catch (error) {
+      setSnackbar({ open: true, message: 'Upload failed!' });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Box textAlign="center" mt={4}>
-      <Typography variant="h5">Your Profile</Typography>
-      <Box position="relative" display="inline-block" mt={2}>
-        <Avatar
-          src={user?.profilePic}
-          sx={{ width: 120, height: 120, margin: "auto" }}
-        />
-        <input
-          type="file"
-          ref={fileInputRef}
-          accept="image/*"
-          onChange={handleUpload}
-          style={{ display: "none" }}
-        />
-        <Button
-          variant="contained"
-          startIcon={<PhotoCameraIcon />}
-          onClick={() => fileInputRef.current.click()}
-          disabled={loading}
-          sx={{ mt: 2 }}
-        >
-          {loading ? <CircularProgress size={24} /> : "Change Picture"}
-        </Button>
-      </Box>
-    </Box>
+    <div style={{ padding: 24 }}>
+      <Typography variant="h5" gutterBottom>
+        Profile Picture
+      </Typography>
+
+      <Avatar
+        src={user.profilePic}
+        alt="Profile"
+        sx={{ width: 120, height: 120, mb: 2 }}
+      />
+
+      <input
+        type="file"
+        accept="image/*"
+        onChange={(e) => setImage(e.target.files[0])}
+      />
+
+      <Button
+        variant="contained"
+        onClick={handleUpload}
+        disabled={loading || !image}
+        sx={{ mt: 2 }}
+      >
+        {loading ? <CircularProgress size={24} /> : 'Upload Profile Pic'}
+      </Button>
+
+      <Snackbar
+        open={snackbar.open}
+        onClose={() => setSnackbar({ open: false, message: '' })}
+        autoHideDuration={3000}
+        message={snackbar.message}
+      />
+    </div>
   );
 };
 

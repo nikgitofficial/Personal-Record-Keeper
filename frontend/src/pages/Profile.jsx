@@ -1,68 +1,75 @@
-import { useState, useContext } from "react";
-import { Avatar, Button, Box, CircularProgress, Typography } from "@mui/material";
-import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
-import { AuthContext } from "../context/AuthContext";
+import { useState, useContext, useEffect } from "react";
+import {
+  Avatar,
+  Button,
+  CircularProgress,
+  Box,
+  Typography,
+} from "@mui/material";
 import axios from "../api/axios";
+import { AuthContext } from "../context/AuthContext";
 
-const Profile = () => {
+const ProfilePicture = () => {
   const { user, setUser } = useContext(AuthContext);
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [image, setImage] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Cleanup preview URL when image changes or component unmounts
+  useEffect(() => {
+    if (image) {
+      const objectUrl = URL.createObjectURL(image);
+      setPreviewUrl(objectUrl);
+      return () => URL.revokeObjectURL(objectUrl);
+    } else {
+      setPreviewUrl("");
+    }
+  }, [image]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
-    if (file) setSelectedImage(file);
+    if (file) {
+      setImage(file);
+    }
   };
 
   const handleUpload = async () => {
-    if (!selectedImage) return;
-    setLoading(true);
+    if (!image) return;
+
     const formData = new FormData();
-    formData.append("image", selectedImage);
+    formData.append("image", image);
 
     try {
-      const token = localStorage.getItem("accessToken");
-      const res = await axios.post("/profile-pic", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${token}`,
-        },
+      setLoading(true);
+      const res = await axios.post("/api/profile/upload-profile-pic", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
-      setUser(res.data.user);
-      setSelectedImage(null);
+      // Update context user profile pic
+      setUser((prev) => ({ ...prev, profilePic: res.data.url }));
+      setImage(null); // Reset selected image after upload
     } catch (err) {
-      console.error("Upload failed:", err.message);
+      console.error("Upload failed", err);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Box textAlign="center" mt={5}>
-      <Typography variant="h5">Update Profile Picture</Typography>
+    <Box textAlign="center" mt={2}>
+      <Typography variant="h6">Profile Picture</Typography>
       <Avatar
-        src={selectedImage ? URL.createObjectURL(selectedImage) : user?.profilePic}
-        sx={{ width: 150, height: 150, margin: "20px auto" }}
+        alt="Profile"
+        src={previewUrl || user?.profilePic}
+        sx={{ width: 100, height: 100, margin: "auto", mt: 1 }}
       />
-      <input
-        accept="image/*"
-        type="file"
-        id="upload"
-        onChange={handleImageChange}
-        style={{ display: "none" }}
-      />
-      <label htmlFor="upload">
-        <Button variant="contained" component="span" startIcon={<PhotoCameraIcon />}>
-          Choose Image
-        </Button>
-      </label>
       <Box mt={2}>
+        <input type="file" accept="image/*" onChange={handleImageChange} />
         <Button
           variant="contained"
-          color="primary"
           onClick={handleUpload}
-          disabled={loading || !selectedImage}
+          disabled={loading || !image}
+          sx={{ mt: 1 }}
         >
           {loading ? <CircularProgress size={24} /> : "Upload"}
         </Button>
@@ -71,5 +78,4 @@ const Profile = () => {
   );
 };
 
-export default Profile
-;
+export default ProfilePicture;

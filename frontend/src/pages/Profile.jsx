@@ -1,33 +1,40 @@
-import { useState, useContext } from "react";
-import axios from "../api/axios";
 import {
   Avatar,
+  Box,
   Button,
   CircularProgress,
   Typography,
-  Box,
-  IconButton,
 } from "@mui/material";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
+import { useContext, useRef, useState } from "react";
+import axios from "../api/axios";
 import { AuthContext } from "../context/AuthContext";
 
 const Profile = () => {
-  const { user, updateUser } = useContext(AuthContext);
-  const [selectedFile, setSelectedFile] = useState(null);
+  const { user, setUser } = useContext(AuthContext);
+  const fileInputRef = useRef();
   const [loading, setLoading] = useState(false);
 
-  const handleUpload = async () => {
-    if (!selectedFile) return;
-    const formData = new FormData();
-    formData.append("image", selectedFile);
+  const handleUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
+    const formData = new FormData();
+    formData.append("file", file);
+
+    setLoading(true);
     try {
-      setLoading(true);
-      const res = await axios.post("/api/profile/upload-profile-pic", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+      const res = await axios.post("/profile/upload-profile-pic", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        withCredentials: true,
       });
-      updateUser(res.data.user);
-      setSelectedFile(null);
+
+      setUser((prev) => ({
+        ...prev,
+        profilePic: res.data.profilePic,
+      }));
     } catch (err) {
       console.error("Upload failed:", err);
     } finally {
@@ -36,44 +43,30 @@ const Profile = () => {
   };
 
   return (
-    <Box textAlign="center" p={4}>
-      <Typography variant="h5">Profile Picture</Typography>
-
+    <Box textAlign="center" mt={4}>
+      <Typography variant="h5">Your Profile</Typography>
       <Box position="relative" display="inline-block" mt={2}>
         <Avatar
           src={user?.profilePic}
-          alt="Profile"
-          sx={{ width: 120, height: 120 }}
+          sx={{ width: 120, height: 120, margin: "auto" }}
         />
         <input
-          accept="image/*"
           type="file"
-          hidden
-          id="upload-profile-pic"
-          onChange={(e) => setSelectedFile(e.target.files[0])}
+          ref={fileInputRef}
+          accept="image/*"
+          onChange={handleUpload}
+          style={{ display: "none" }}
         />
-        <label htmlFor="upload-profile-pic">
-          <IconButton
-            component="span"
-            sx={{ position: "absolute", bottom: 0, right: 0 }}
-          >
-            <PhotoCameraIcon />
-          </IconButton>
-        </label>
+        <Button
+          variant="contained"
+          startIcon={<PhotoCameraIcon />}
+          onClick={() => fileInputRef.current.click()}
+          disabled={loading}
+          sx={{ mt: 2 }}
+        >
+          {loading ? <CircularProgress size={24} /> : "Change Picture"}
+        </Button>
       </Box>
-
-      {selectedFile && (
-        <Box mt={2}>
-          <Button
-            variant="contained"
-            onClick={handleUpload}
-            disabled={loading}
-            startIcon={loading ? <CircularProgress size={20} /> : null}
-          >
-            {loading ? "Uploading..." : "Upload"}
-          </Button>
-        </Box>
-      )}
     </Box>
   );
 };

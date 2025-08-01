@@ -8,7 +8,8 @@ import authRoutes from "./routes/authRoutes.js";
 import idCardRoutes from "./routes/idCardRoutes.js";
 import personalDetailRoutes from "./routes/personalDetail.js";
 import userFileRoutes from "./routes/userFileRoutes.js";
-import profileRoutes from "./routes/profile.js";
+import profilePicRoute from "./routes/profilePicRoute.js";
+
 
 
 dotenv.config();
@@ -43,7 +44,13 @@ app.use("/api/auth", authRoutes);
 app.use("/api/id-cards", idCardRoutes);
 app.use("/api/personal-details", personalDetailRoutes);
 app.use("/api/user-files", userFileRoutes);
-app.use("/api/profile-pic", profileRoutes);
+app.use("/api/profile-pic", profilePicRoute);
+
+
+
+
+
+
 
 
 // ✅ MongoDB + Server Start

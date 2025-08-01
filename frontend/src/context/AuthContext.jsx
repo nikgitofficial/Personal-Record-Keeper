@@ -1,4 +1,3 @@
-// context/AuthContext.jsx
 import { createContext, useState, useEffect } from "react";
 import axios from "../api/axios";
 
@@ -52,8 +51,14 @@ export const AuthProvider = ({ children }) => {
     getMe();
   }, []);
 
+  // ✅ Add this function to allow profilePic (or entire user) updates
+  const updateUser = (updatedUser) => {
+    setUser(updatedUser);
+    localStorage.setItem("user", JSON.stringify(updatedUser)); // optional: if you're storing user in localStorage
+  };
+
   return (
-    <AuthContext.Provider value={{ user, setUser }}>
+    <AuthContext.Provider value={{ user, setUser, updateUser }}>
       {!loading && children}
     </AuthContext.Provider>
   );

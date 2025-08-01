@@ -54,11 +54,55 @@ const UserFileUploader = () => {
     }
   };
 
+  const renderPreview = (url, filename) => {
+    const ext = filename.split(".").pop().toLowerCase();
+
+    if (["jpg", "jpeg", "png", "gif", "webp"].includes(ext)) {
+      return (
+        <img
+          src={url}
+          alt={filename}
+          style={{ maxWidth: "100%", maxHeight: 300, marginTop: 10 }}
+        />
+      );
+    }
+
+    if (ext === "pdf") {
+      return (
+        <iframe
+          src={url}
+          title={filename}
+          width="100%"
+          height="400px"
+          style={{ border: "1px solid #ccc", marginTop: "10px" }}
+        />
+      );
+    }
+
+    if (["doc", "docx", "ppt", "pptx", "xls", "xlsx"].includes(ext)) {
+      return (
+        <iframe
+          src={`https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`}
+          title="doc-preview"
+          width="100%"
+          height="400px"
+          style={{ border: "1px solid #ccc", marginTop: "10px" }}
+        />
+      );
+    }
+
+    return (
+      <Typography variant="body2" color="textSecondary" mt={1}>
+        No preview available. Please download to view.
+      </Typography>
+    );
+  };
+
   return (
     <Box p={3}>
       <Typography variant="h5">📁 Upload File</Typography>
 
-      <Box display="flex" gap={2} my={2}>
+      <Box display="flex" gap={2} my={2} flexWrap="wrap">
         <TextField
           type="file"
           onChange={(e) => setFile(e.target.files[0])}
@@ -78,16 +122,23 @@ const UserFileUploader = () => {
       {loading ? <CircularProgress /> : (
         <List>
           {files.map((f) => (
-            <ListItem key={f._id}>
-              <ListItemText
-                primary={f.filename}
-                secondary={f.description}
-              />
+            <ListItem key={f._id} alignItems="flex-start">
+              <Box flex={1}>
+                <ListItemText
+                  primary={f.filename}
+                  secondary={f.description}
+                />
+                {renderPreview(f.cloudinaryUrl, f.filename)}
+              </Box>
               <ListItemSecondaryAction>
                 <IconButton onClick={() => handleDelete(f._id)}>
                   <DeleteIcon />
                 </IconButton>
-                <Button href={f.cloudinaryUrl} target="_blank" rel="noopener noreferrer">
+                <Button
+                  href={f.cloudinaryUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   Download
                 </Button>
               </ListItemSecondaryAction>

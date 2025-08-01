@@ -1,81 +1,81 @@
-import { useState, useContext, useEffect } from "react";
+import { useState, useContext } from "react";
+import axios from "../api/axios";
 import {
   Avatar,
   Button,
   CircularProgress,
-  Box,
   Typography,
+  Box,
+  IconButton,
 } from "@mui/material";
-import axios from "../api/axios";
+import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import { AuthContext } from "../context/AuthContext";
 
-const ProfilePicture = () => {
-  const { user, setUser } = useContext(AuthContext);
-  const [image, setImage] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState("");
+const Profile = () => {
+  const { user, updateUser } = useContext(AuthContext);
+  const [selectedFile, setSelectedFile] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Cleanup preview URL when image changes or component unmounts
-  useEffect(() => {
-    if (image) {
-      const objectUrl = URL.createObjectURL(image);
-      setPreviewUrl(objectUrl);
-      return () => URL.revokeObjectURL(objectUrl);
-    } else {
-      setPreviewUrl("");
-    }
-  }, [image]);
-
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setImage(file);
-    }
-  };
-
   const handleUpload = async () => {
-    if (!image) return;
-
+    if (!selectedFile) return;
     const formData = new FormData();
-    formData.append("image", image);
+    formData.append("image", selectedFile);
 
     try {
       setLoading(true);
       const res = await axios.post("/api/profile/upload-profile-pic", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-
-      // Update context user profile pic
-      setUser((prev) => ({ ...prev, profilePic: res.data.url }));
-      setImage(null); // Reset selected image after upload
+      updateUser(res.data.user);
+      setSelectedFile(null);
     } catch (err) {
-      console.error("Upload failed", err);
+      console.error("Upload failed:", err);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Box textAlign="center" mt={2}>
-      <Typography variant="h6">Profile Picture</Typography>
-      <Avatar
-        alt="Profile"
-        src={previewUrl || user?.profilePic}
-        sx={{ width: 100, height: 100, margin: "auto", mt: 1 }}
-      />
-      <Box mt={2}>
-        <input type="file" accept="image/*" onChange={handleImageChange} />
-        <Button
-          variant="contained"
-          onClick={handleUpload}
-          disabled={loading || !image}
-          sx={{ mt: 1 }}
-        >
-          {loading ? <CircularProgress size={24} /> : "Upload"}
-        </Button>
+    <Box textAlign="center" p={4}>
+      <Typography variant="h5">Profile Picture</Typography>
+
+      <Box position="relative" display="inline-block" mt={2}>
+        <Avatar
+          src={user?.profilePic}
+          alt="Profile"
+          sx={{ width: 120, height: 120 }}
+        />
+        <input
+          accept="image/*"
+          type="file"
+          hidden
+          id="upload-profile-pic"
+          onChange={(e) => setSelectedFile(e.target.files[0])}
+        />
+        <label htmlFor="upload-profile-pic">
+          <IconButton
+            component="span"
+            sx={{ position: "absolute", bottom: 0, right: 0 }}
+          >
+            <PhotoCameraIcon />
+          </IconButton>
+        </label>
       </Box>
+
+      {selectedFile && (
+        <Box mt={2}>
+          <Button
+            variant="contained"
+            onClick={handleUpload}
+            disabled={loading}
+            startIcon={loading ? <CircularProgress size={20} /> : null}
+          >
+            {loading ? "Uploading..." : "Upload"}
+          </Button>
+        </Box>
+      )}
     </Box>
   );
 };
 
-export default ProfilePicture;
+export default Profile;

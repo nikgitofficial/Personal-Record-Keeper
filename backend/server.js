@@ -44,7 +44,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/id-cards", idCardRoutes);
 app.use("/api/personal-details", personalDetailRoutes);
 app.use("/api/user-files", userFileRoutes);
-app.use("/profile", profileRoutes);
+app.use("/api/profile", profileRoutes);
+
 
 
 

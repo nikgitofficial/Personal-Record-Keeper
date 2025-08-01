@@ -4,7 +4,8 @@ import { uploadProfilePic } from "../controllers/profilePicController.js";
 import verifyToken from "../middleware/verifyToken.js";
 
 const router = express.Router();
-const upload = multer({ storage: multer.memoryStorage() });
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
 router.post("/upload-profile-pic", verifyToken, upload.single("image"), uploadProfilePic);
 

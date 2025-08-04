@@ -8,6 +8,8 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import PersonalDetailes from "./pages/PersonaDetailes";
 import UserFileUploader from "./pages/UserFileUploader";
+import Preview from './pages/Preview';
+
 
 const App = () => {
   const { user } = useContext(AuthContext);
@@ -17,6 +19,7 @@ const App = () => {
       <Routes>
         <Route path="/" element={user ? <Dashboard /> : <Navigate to="/login" />} />
         <Route path="/profile" element={<Dashboard><Profile /></Dashboard>} />
+        <Route path="/preview/:id" element={<Dashboard><Preview /></Dashboard>} />
         <Route path="/settings" element={<Dashboard><Settings /></Dashboard>} />
         <Route path="/personal-details" element={<Dashboard><PersonalDetailes /></Dashboard>} />
          <Route path="user-file" element={<Dashboard><UserFileUploader /></Dashboard>} />

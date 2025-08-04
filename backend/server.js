@@ -11,7 +11,6 @@ import profileRoutes from './routes/profileRoutes.js';
 import fileRoutes from "./routes/fileRoutes.js";
 
 
-
 dotenv.config();
 const app = express();
 
@@ -45,6 +44,7 @@ app.use("/api/id-cards", idCardRoutes);
 app.use("/api/personal-details", personalDetailRoutes);
 app.use('/api/profile', profileRoutes);
 app.use("/api/files", fileRoutes);
+
 
 
 

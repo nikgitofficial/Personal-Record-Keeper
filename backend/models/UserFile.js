@@ -1,19 +1,11 @@
 import mongoose from "mongoose";
 
 const userFileSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
-  },
-  filename: String,
-  description: String,
-  cloudinaryUrl: String,
-  cloudinaryPublicId: String,
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-});
+  public_id: String,
+  secure_url: String,
+  originalname: String,
+  mimetype: String,
+  size: Number,
+}, { timestamps: true });
 
 export default mongoose.model("UserFile", userFileSchema);

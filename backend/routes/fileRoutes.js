@@ -1,16 +1,12 @@
 import express from "express";
-import  verifyToken  from "../middleware/verifyToken.js";
-import {
-  uploadFile,
-  uploadMiddleware,
-  getFiles,
-  deleteFile,
-} from "../controllers/fileController.js";
+import multer from "multer";
+import { uploadFile, getFiles } from "../controllers/fileController.js";
 
 const router = express.Router();
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
-router.post("/", verifyToken, uploadMiddleware, uploadFile);
-router.get("/", verifyToken, getFiles);
-router.delete("/:id", verifyToken, deleteFile);
+router.post("/upload", upload.single("file"), uploadFile);
+router.get("/", getFiles);
 
 export default router;

@@ -1,16 +1,19 @@
-import { useState, useEffect } from "react";
-import axios from "../api/axios";
+import React, { useState, useEffect } from "react";
 import {
-  Box, Button, CircularProgress, TextField, Typography, IconButton,
-  List, ListItem, ListItemText, ListItemSecondaryAction
+  Box, Button, Typography, CircularProgress, Grid, Paper, IconButton
 } from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import axios from "../api/axios";
 
 const UserFileUploader = () => {
   const [file, setFile] = useState(null);
-  const [description, setDescription] = useState("");
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    fetchFiles();
+  }, []);
 
   const fetchFiles = async () => {
     setLoading(true);
@@ -18,134 +21,67 @@ const UserFileUploader = () => {
       const res = await axios.get("/files");
       setFiles(res.data);
     } catch (err) {
-      console.error(err);
+      console.error("Error fetching files:", err);
     }
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchFiles();
-  }, []);
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
+  };
 
   const handleUpload = async () => {
     if (!file) return;
-    setLoading(true);
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("description", description);
 
+    setUploading(true);
     try {
-      await axios.post("/files", formData);
+      await axios.post("/files/upload", formData);
       setFile(null);
-      setDescription("");
       fetchFiles();
     } catch (err) {
-      console.error("Upload failed", err);
+      console.error("Upload failed:", err);
     }
-    setLoading(false);
-  };
-
-  const handleDelete = async (id) => {
-    try {
-      await axios.delete(`/files/${id}`);
-      fetchFiles();
-    } catch (err) {
-      console.error("Delete failed", err);
-    }
-  };
-
-  const renderPreview = (url, filename) => {
-    const ext = filename.split(".").pop().toLowerCase();
-
-    if (["jpg", "jpeg", "png", "gif", "webp"].includes(ext)) {
-      return (
-        <img
-          src={url}
-          alt={filename}
-          style={{ maxWidth: "100%", maxHeight: 300, marginTop: 10 }}
-        />
-      );
-    }
-
-    if (ext === "pdf") {
-      return (
-        <iframe
-          src={url}
-          title={filename}
-          width="100%"
-          height="400px"
-          style={{ border: "1px solid #ccc", marginTop: "10px" }}
-        />
-      );
-    }
-
-    if (["doc", "docx", "ppt", "pptx", "xls", "xlsx"].includes(ext)) {
-      return (
-        <iframe
-          src={`https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`}
-          title="doc-preview"
-          width="100%"
-          height="400px"
-          style={{ border: "1px solid #ccc", marginTop: "10px" }}
-        />
-      );
-    }
-
-    return (
-      <Typography variant="body2" color="textSecondary" mt={1}>
-        No preview available. Please download to view.
-      </Typography>
-    );
+    setUploading(false);
   };
 
   return (
     <Box p={3}>
-      <Typography variant="h5">📁 Upload File</Typography>
+      <Typography variant="h5" gutterBottom>Cloudinary File Upload</Typography>
 
-      <Box display="flex" gap={2} my={2} flexWrap="wrap">
-        <TextField
-          type="file"
-          onChange={(e) => setFile(e.target.files[0])}
-          inputProps={{ accept: "*" }}
-        />
-        <TextField
-          label="Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-        <Button variant="contained" onClick={handleUpload} disabled={loading}>
-          {loading ? <CircularProgress size={24} /> : "Upload"}
+      <Box display="flex" gap={2} alignItems="center">
+        <input type="file" onChange={handleFileChange} />
+        <Button
+          variant="contained"
+          startIcon={<CloudUploadIcon />}
+          onClick={handleUpload}
+          disabled={!file || uploading}
+        >
+          {uploading ? "Uploading..." : "Upload"}
         </Button>
       </Box>
 
-      <Typography variant="h6" mt={4}>Your Files</Typography>
-      {loading ? <CircularProgress /> : (
-        <List>
-          {files.map((f) => (
-            <ListItem key={f._id} alignItems="flex-start">
-              <Box flex={1}>
-                <ListItemText
-                  primary={f.filename}
-                  secondary={f.description}
-                />
-                {renderPreview(f.cloudinaryUrl, f.filename)}
-              </Box>
-              <ListItemSecondaryAction>
-                <IconButton onClick={() => handleDelete(f._id)}>
-                  <DeleteIcon />
-                </IconButton>
-                <Button
-                  href={f.cloudinaryUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Download
-                </Button>
-              </ListItemSecondaryAction>
-            </ListItem>
-          ))}
-        </List>
-      )}
+      <Box mt={4}>
+        <Typography variant="h6">Uploaded Files</Typography>
+        {loading ? (
+          <CircularProgress />
+        ) : (
+          <Grid container spacing={2}>
+            {files.map((file) => (
+              <Grid item key={file._id} xs={12} sm={6} md={4}>
+                <Paper sx={{ p: 2, wordBreak: "break-all" }}>
+                  <Typography variant="subtitle2">{file.originalname}</Typography>
+                  <Typography variant="body2" color="text.secondary">{(file.size / 1024).toFixed(2)} KB</Typography>
+                  <a href={file.secure_url} target="_blank" rel="noopener noreferrer">
+                    View File
+                  </a>
+                </Paper>
+              </Grid>
+            ))}
+          </Grid>
+        )}
+      </Box>
     </Box>
   );
 };

@@ -1,13 +1,23 @@
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import axios from '../api/axios';
 import {
   Box, Typography, CircularProgress,
-  useTheme, useMediaQuery
+  useTheme, useMediaQuery, IconButton, Tooltip
 } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+
+const CloseButtonWithTooltip = ({ onClose }) => (
+  <Tooltip title="Close">
+    <IconButton onClick={onClose} aria-label="close" sx={{ position: 'absolute', top: 8, right: 8 }}>
+      <CloseIcon />
+    </IconButton>
+  </Tooltip>
+);
 
 export default function Preview() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [previewError, setPreviewError] = useState(false);
@@ -22,8 +32,6 @@ export default function Preview() {
           headers: { Authorization: `Bearer ${token}` },
           withCredentials: true
         });
-
-        console.log('🔍 File URL:', data.url);
         setFile(data);
       } catch (e) {
         console.error('❌ File fetch error:', e);
@@ -32,35 +40,19 @@ export default function Preview() {
         setLoading(false);
       }
     };
-
     fetchFile();
   }, [id, token]);
-
-  const handleSecureDownload = async () => {
-    try {
-      const { data } = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/files/download/${file._id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true
-        }
-      );
-      window.open(data.url, '_blank');
-    } catch (e) {
-      console.error('❌ Download error:', e);
-    }
-  };
 
   if (loading) {
     return (
       <Box
         sx={{
-        position: 'absolute',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        width: '100%',
-        maxWidth: 400,
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: '100%',
+          maxWidth: 400,
           height: '100vh',
           display: 'flex',
           justifyContent: 'center',
@@ -69,17 +61,17 @@ export default function Preview() {
         }}
       >
         <CircularProgress size={60} color="success" />
-  <Typography mt={2} variant="body1" color="text.secondary">
-    Loading file preview...
-  </Typography>
+        <Typography mt={2} variant="body1" color="text.secondary">
+          Loading file preview...
+        </Typography>
       </Box>
     );
   }
 
   if (!file) return <Typography>❌ File not found</Typography>;
 
-  const ext = file.filename.split('.').pop().toLowerCase();
-  const isImage = file.type.startsWith('image/');
+  const ext = file.filename?.split('.').pop().toLowerCase();
+  const isImage = file.type?.startsWith('image/');
   const isPreviewableDoc = ['pdf', 'docx', 'pptx', 'xlsx'].includes(ext);
   const googleViewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(file.url)}&embedded=true`;
 
@@ -110,9 +102,13 @@ export default function Preview() {
           bgcolor: 'background.paper',
           textAlign: 'center',
           borderRadius: 2,
-          boxShadow: 3
+          boxShadow: 3,
+          position: 'relative'
         }}
       >
+        {/* ✅ Tooltip Close Button */}
+        <CloseButtonWithTooltip onClose={() => navigate(-1)} />
+
         <Typography variant={isMobile ? 'h6' : 'h5'} gutterBottom>
           {file.filename}
         </Typography>

@@ -15,6 +15,8 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import axios from '../api/axios';
+import CloseIcon from '@mui/icons-material/Close';
+
 
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
@@ -164,6 +166,14 @@ const UserFileUploader = () => {
       py: 3
     }}>
       <Container maxWidth="md" sx={{ background: '#fff', boxShadow: 3, borderRadius: 2, p: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+  <Tooltip title="Close">
+    <IconButton onClick={() => navigate(-1)} size="large">
+      <CloseIcon />
+    </IconButton>
+  </Tooltip>
+</Box>
+
         <Typography variant="h5" gutterBottom align="center">📤 Upload a File</Typography>
 
         <form onSubmit={handleUpload}>

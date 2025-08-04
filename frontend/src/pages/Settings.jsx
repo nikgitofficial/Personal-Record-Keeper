@@ -49,6 +49,7 @@ const Settings = () => {
   const [editCardId, setEditCardId] = useState(null);
   const [buttonDisabled, setButtonDisabled] = useState(false);
   const [deletingCardId, setDeletingCardId] = useState(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchCards();
@@ -149,7 +150,7 @@ const Settings = () => {
 };
 
 
-  const handleEditCard = (card) => {
+const handleEditCard = (card) => {
   setCardForm({
     name: card.cardName,
     customName: card.cardName === "Others" ? card.cardName : "",
@@ -161,8 +162,9 @@ const Settings = () => {
   setShowCustomNameInput(card.cardName === "Others");
   setEditCardId(card._id);
   setIsEditing(true);
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  setEditDialogOpen(true); // 🆕 Open modal
 };
+
 
   return (
     <Box p={2}>
@@ -364,6 +366,104 @@ const Settings = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
+      <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} fullWidth maxWidth="sm">
+  <DialogTitle>Edit ID Card</DialogTitle>
+  <DialogContent>
+    <Grid container spacing={2} mt={1}>
+      <Grid item xs={12} sm={6}>
+        <FormControl fullWidth>
+          <InputLabel id="edit-card-name-label">ID Type</InputLabel>
+          <Select
+            labelId="edit-card-name-label"
+            name="name"
+            value={cardForm.name}
+            label="ID Type"
+            onChange={handleChange}
+          >
+            <MenuItem value="PhilHealth">PhilHealth</MenuItem>
+            <MenuItem value="SSS">SSS</MenuItem>
+            <MenuItem value="TIN">TIN</MenuItem>
+            <MenuItem value="Pag-IBIG">Pag-IBIG</MenuItem>
+            <MenuItem value="UMID">UMID</MenuItem>
+            <MenuItem value="Driver's License">Driver's License</MenuItem>
+            <MenuItem value="National ID">National ID</MenuItem>
+            <MenuItem value="Others">Others</MenuItem>
+          </Select>
+        </FormControl>
+      </Grid>
+
+      {showCustomNameInput && (
+        <Grid item xs={12} sm={6}>
+          <TextField
+            fullWidth
+            label="Custom ID Name"
+            name="customName"
+            value={cardForm.customName}
+            onChange={handleChange}
+          />
+        </Grid>
+      )}
+
+      <Grid item xs={12} sm={showCustomNameInput ? 12 : 6}>
+        <TextField
+          fullWidth
+          label="ID Number"
+          name="number"
+          value={cardForm.number}
+          onChange={handleChange}
+        />
+      </Grid>
+
+      <Grid item xs={12} sm={6}>
+        <TextField
+          fullWidth
+          label="Full Name"
+          name="fullname"
+          value={cardForm.fullname}
+          onChange={handleChange}
+        />
+      </Grid>
+
+      <Grid item xs={12} sm={6}>
+        <TextField
+          fullWidth
+          label="Birthdate"
+          name="birthdate"
+          type="date"
+          value={cardForm.birthdate}
+          onChange={handleChange}
+          InputLabelProps={{ shrink: true }}
+        />
+      </Grid>
+
+      <Grid item xs={12}>
+        <TextField
+          fullWidth
+          label="Address"
+          name="address"
+          value={cardForm.address}
+          onChange={handleChange}
+          multiline
+          rows={2}
+        />
+      </Grid>
+    </Grid>
+  </DialogContent>
+  <DialogActions>
+    <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+    <Button
+      variant="contained"
+      onClick={async () => {
+        await handleSaveCard();
+        setEditDialogOpen(false);
+      }}
+      disabled={buttonDisabled}
+    >
+      Save Changes
+    </Button>
+  </DialogActions>
+</Dialog>
+
     </Box>
   );
 };

@@ -22,6 +22,9 @@ import {
   Collapse,
   CircularProgress,
   Tooltip,
+  
+  
+   Stack
 } from "@mui/material";
 import {
   Menu as MenuIcon,
@@ -36,6 +39,11 @@ import {
   ExpandLess,
   ExpandMore,
 } from "@mui/icons-material";
+import EmailIcon from "@mui/icons-material/Email";
+import GitHubIcon from "@mui/icons-material/GitHub";
+import InfoIcon from "@mui/icons-material/Info";
+import LanguageIcon from "@mui/icons-material/Language";
+
 import { InsertDriveFile as InsertDriveFileIcon } from "@mui/icons-material";
 import CreditCardIcon from '@mui/icons-material/CreditCard';
 import { useNavigate, useLocation, Link } from "react-router-dom";
@@ -56,6 +64,7 @@ const Dashboard = ({ children }) => {
   const { user, setUser } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
+  const [dateTime, setDateTime] = useState(new Date());
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(localStorage.getItem("darkMode") === "true");
@@ -99,6 +108,13 @@ const Dashboard = ({ children }) => {
       setLoading(false);
     }
   };
+
+  
+useEffect(() => {
+  const interval = setInterval(() => setDateTime(new Date()), 1000);
+  return () => clearInterval(interval);
+}, []);
+
 
   useEffect(() => {
     fetchIdCards();
@@ -223,23 +239,29 @@ const Dashboard = ({ children }) => {
         <CssBaseline />
         <AppBar position="fixed" sx={{ zIndex: theme.zIndex.drawer + 1 }}>
           <Toolbar>
-            <IconButton
-              color="inherit"
-              edge="start"
-              onClick={toggleDrawer}
-              sx={{ mr: 2, display: { sm: "none" } }}
-            >
-              <MenuIcon />
-            </IconButton>
-            <Typography variant="h6" sx={{ flexGrow: 1 }}>
-              Welcome, {user?.username || "User"}
-            </Typography>
-            <Tooltip title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"} arrow>
-              <IconButton color="inherit" onClick={toggleTheme}>
-                {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
-              </IconButton>
-            </Tooltip>
-          </Toolbar>
+  <IconButton
+    color="inherit"
+    edge="start"
+    onClick={toggleDrawer}
+    sx={{ mr: 2, display: { sm: "none" } }}
+  >
+    <MenuIcon />
+  </IconButton>
+
+  <Typography variant="h6" sx={{ flexGrow: 1 }}>
+    Welcome, {user?.username || "User"}
+  </Typography>
+
+  <Typography variant="body2" sx={{ mr: 2 }}>
+    {dateTime.toLocaleString()}
+  </Typography>
+
+  <Tooltip title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"} arrow>
+    <IconButton color="inherit" onClick={toggleTheme}>
+      {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
+    </IconButton>
+  </Tooltip>
+</Toolbar>
         </AppBar>
 
         <Box component="nav" sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}>
@@ -267,15 +289,13 @@ const Dashboard = ({ children }) => {
             flexGrow: 1,
             px: { xs: 2, sm: 3 },
             pt: { xs: 8, sm: 10 },
+            pb: 10,
             width: { sm: `calc(100% - ${drawerWidth}px)` },
             bgcolor: "background.default",
             minHeight: "100vh",
           }}
         >
-          <Box textAlign="center" mb={4}>
-            <Typography variant="h4">{user?.username || "User"}</Typography>
-            <Typography variant="body1" color="text.secondary">Email: {user?.email || "N/A"}</Typography>
-          </Box>
+          
 
           <Box mb={4}>
             <Typography variant="h6" gutterBottom>Government ID Cards</Typography>
@@ -338,9 +358,88 @@ const Dashboard = ({ children }) => {
               </Grid>
             )}
           </Box>
+            <Divider sx={{ my: 4 }} />
 
           {children}
+       <Box
+       component="footer"
+       sx={{
+    position: 'fixed',
+    bottom: 0,
+    left: { sm: `${drawerWidth}px` },
+    width: { xs: '100%', sm: `calc(100% - ${drawerWidth}px)` },
+    bgcolor: "background.paper",
+    boxShadow: 3,
+    py: 1,
+    zIndex: (theme) => theme.zIndex.drawer + 1,
+  }}
+>
+
+      <Stack
+        direction="row"
+        justifyContent="center"
+        spacing={2}
+        sx={{ mb: 1, flexWrap: "wrap" }}
+      >
+  <IconButton
+  component="a"
+  href="/about"
+  color="inherit"
+  aria-label="About"
+>
+  <InfoIcon />
+</IconButton>
+
+<IconButton
+  component="a"
+  href="mailto:nickforjobacc@gmail.com?subject=Message%20from%20Personal%20Record%20Keeper"
+  color="inherit"
+  aria-label="Email"
+>
+  <EmailIcon />
+</IconButton>
+
+
+
+
+<IconButton
+  component="a"
+  href="https://nikkoboy123.github.io/nik/"
+  target="_blank"
+  rel="noopener noreferrer"
+  color="inherit"
+  aria-label="Portfolio"
+>
+  <LanguageIcon />
+</IconButton>
+
+<IconButton
+  component="a"
+  href="https://github.com/nikgitofficial"
+  target="_blank"
+  rel="noopener noreferrer"
+  color="inherit"
+  aria-label="GitHub"
+>
+  <GitHubIcon />
+</IconButton>
+
+
+      </Stack>
+
+      <Typography
+        variant="body2"
+        color="text.secondary"
+        sx={{ fontSize: "0.8rem" }}
+      >
+        &copy; {new Date().getFullYear()} My ID Card App. All rights reserved.
+      </Typography>
+    </Box>
+      
+    
+       
         </Box>
+        
       </Box>
     </ThemeProvider>
   );

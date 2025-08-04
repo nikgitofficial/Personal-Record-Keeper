@@ -8,6 +8,7 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import PersonalDetailes from "./pages/PersonaDetailes";
 import UserFileUploader from "./pages/UserFileUploader";
+import About from "./pages/About";
 import Preview from './pages/Preview';
 
 
@@ -23,6 +24,7 @@ const App = () => {
         <Route path="/settings" element={<Dashboard><Settings /></Dashboard>} />
         <Route path="/personal-details" element={<Dashboard><PersonalDetailes /></Dashboard>} />
          <Route path="user-file" element={<Dashboard><UserFileUploader /></Dashboard>} />
+         <Route path="/about" element={<Dashboard><About /></Dashboard>} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
       </Routes>

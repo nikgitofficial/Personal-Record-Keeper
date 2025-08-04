@@ -1,16 +1,20 @@
 import PersonalDetail from "../models/PersonalDetail.js";
+import { calculateAge } from "../utils/calculateAge.js";
+
 
 // CREATE
 export const createPersonalDetail = async (req, res) => {
   try {
-    const { fullName, birthdate, address,age } = req.body;
+    const { fullName, birthdate, address } = req.body;
     const userId = req.userId;
 
-    if (!fullName || !birthdate || !address || !userId || !age) {
+    if (!fullName || !birthdate || !address || !userId) {
       return res.status(400).json({ message: "Missing fields" });
     }
 
-    const detail = await PersonalDetail.create({ userId, fullName, birthdate, address,age });
+    const age = calculateAge(birthdate);
+
+    const detail = await PersonalDetail.create({ userId, fullName, birthdate, address, age });
     res.status(201).json(detail);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -30,7 +34,12 @@ export const getPersonalDetails = async (req, res) => {
 // UPDATE
 export const updatePersonalDetail = async (req, res) => {
   try {
-    const detail = await PersonalDetail.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const updates = { ...req.body };
+    if (updates.birthdate) {
+      updates.age = calculateAge(updates.birthdate);
+    }
+
+    const detail = await PersonalDetail.findByIdAndUpdate(req.params.id, updates, { new: true });
     res.status(200).json(detail);
   } catch (error) {
     res.status(500).json({ message: error.message });

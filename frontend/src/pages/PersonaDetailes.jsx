@@ -22,6 +22,7 @@ import {
   TablePagination,
   CircularProgress,
   Grid,
+  useMediaQuery,
 } from "@mui/material";
 import { Delete, Edit } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
@@ -29,7 +30,7 @@ import axios from "../api/axios";
 
 const PersonalDetails = () => {
   const [details, setDetails] = useState([]);
-  const [form, setForm] = useState({ fullName: "", birthdate: "", address: "" });
+  const [form, setForm] = useState({ fullName: "", birthdate: "", address: "",age:"" });
   const [editId, setEditId] = useState(null);
   const [openSnackbar, setOpenSnackbar] = useState({ open: false, message: "", severity: "success" });
   const [openDialog, setOpenDialog] = useState(false);
@@ -37,8 +38,10 @@ const PersonalDetails = () => {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [loadingSave, setLoadingSave] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState(false);
+
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const [page, setPage] = useState(0);
   const rowsPerPage = 5;
@@ -57,6 +60,10 @@ const PersonalDetails = () => {
     if (!form.fullName || form.fullName.length < 2) newErrors.fullName = "Full name is required.";
     if (!form.birthdate || !/^\d{4}-\d{2}-\d{2}$/.test(form.birthdate)) newErrors.birthdate = "Valid birthdate required.";
     if (!form.address || form.address.length < 3) newErrors.address = "Address is required.";
+   if (!form.age || isNaN(form.age) || parseInt(form.age) <= 0) {
+  newErrors.age = "Valid age is required.";
+}
+   
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -66,14 +73,14 @@ const PersonalDetails = () => {
   };
 
   const handleDialogOpen = () => {
-    setForm({ fullName: "", birthdate: "", address: "" });
+    setForm({ fullName: "", birthdate: "", address: "",age:"" });
     setEditId(null);
     setErrors({});
     setOpenDialog(true);
   };
 
   const handleEdit = (detail) => {
-    setForm({ fullName: detail.fullName, birthdate: detail.birthdate, address: detail.address });
+    setForm({ fullName: detail.fullName, birthdate: detail.birthdate, address: detail.address ,age:detail.age || "",});
     setEditId(detail._id);
     setOpenDialog(true);
   };
@@ -100,10 +107,10 @@ const PersonalDetails = () => {
         setOpenSnackbar({ open: true, message: "Added successfully", severity: "success" });
       }
       fetchDetails();
-      setForm({ fullName: "", birthdate: "", address: "" });
+      setForm({ fullName: "", birthdate: "", address: "" ,age:""});
       setOpenDialog(false);
       setEditId(null);
-    } catch (err) {
+    } catch {
       setOpenSnackbar({ open: true, message: "Something went wrong", severity: "error" });
     }
 
@@ -118,7 +125,7 @@ const PersonalDetails = () => {
   }, {});
 
   return (
-    <Box p={2}>
+    <Box p={isMobile ? 2 : 4}>
       <Typography variant="h5" fontWeight="bold" gutterBottom>
         Personal Details
       </Typography>
@@ -129,40 +136,46 @@ const PersonalDetails = () => {
         </Button>
       </Box>
 
-      <TableContainer component={Paper}>
-        <Table>
+      <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
+        <Table stickyHeader>
           <TableHead>
-            <TableRow  colSpan={4}
-    sx={{
-      backgroundColor: isDark ? "#2a2a2a" : "#f4f6f8",
-      color: isDark ? "#fff" : "#000",
-      fontWeight: "bold",
-    }}>
-              <TableCell>Full Name</TableCell>
-              <TableCell>Birthdate</TableCell>
-              <TableCell>Address</TableCell>
-              <TableCell align="center">Actions</TableCell>
+            <TableRow sx={{ backgroundColor: isDark ? "grey.900" : "grey.100" }}>
+              <TableCell><strong>Full Name</strong></TableCell>
+              <TableCell><strong>Birthdate</strong></TableCell>
+              <TableCell><strong>Address</strong></TableCell>
+              <TableCell><strong>Age</strong></TableCell>
+              <TableCell align="center"><strong>Actions</strong></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {Object.entries(groupedDetails).map(([year, items]) => (
               <React.Fragment key={year}>
-                
-                {items.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((detail) => (
-                  <TableRow key={detail._id}>
-                    <TableCell>{detail.fullName}</TableCell>
-                    <TableCell>{detail.birthdate}</TableCell>
-                    <TableCell>{detail.address}</TableCell>
-                    <TableCell align="center">
-                      <Tooltip title="Edit">
-                        <IconButton onClick={() => handleEdit(detail)}><Edit /></IconButton>
-                      </Tooltip>
-                      <Tooltip title="Delete">
-                        <IconButton onClick={() => setConfirmDeleteId(detail._id)}><Delete color="error" /></IconButton>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {items
+                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                  .map((detail, index) => (
+                    <TableRow
+                      key={detail._id}
+                      sx={{ backgroundColor: index % 2 === 0 ? "background.paper" : "action.hover" }}
+                    >
+                      <TableCell>{detail.fullName}</TableCell>
+                      <TableCell>{detail.birthdate}</TableCell>
+                      <TableCell>{detail.address}</TableCell>
+                      <TableCell>{detail.age || "—"}</TableCell>
+
+                      <TableCell align="center">
+                        <Tooltip title="Edit">
+                          <IconButton onClick={() => handleEdit(detail)}>
+                            <Edit />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Delete">
+                          <IconButton onClick={() => setConfirmDeleteId(detail._id)}>
+                            <Delete color="error" />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  ))}
               </React.Fragment>
             ))}
           </TableBody>
@@ -177,11 +190,11 @@ const PersonalDetails = () => {
         />
       </TableContainer>
 
-      {/* Form Dialog */}
+      {/* Dialog for Add/Edit */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)} fullWidth maxWidth="sm">
         <DialogTitle>{editId ? "Edit Detail" : "Add New Detail"}</DialogTitle>
         <form onSubmit={handleSubmit}>
-          <DialogContent>
+          <DialogContent dividers>
             <Grid container spacing={2}>
               <Grid item xs={12}>
                 <TextField
@@ -220,6 +233,18 @@ const PersonalDetails = () => {
                   helperText={errors.address}
                 />
               </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  label="Age"
+                  name="age"
+                  value={form.age}
+                  onChange={handleChange}
+                  fullWidth
+                  error={!!errors.age}
+                  helperText={errors.age}
+                />
+              </Grid>
+               
             </Grid>
           </DialogContent>
           <DialogActions>
@@ -236,7 +261,7 @@ const PersonalDetails = () => {
         </form>
       </Dialog>
 
-      {/* Delete Confirmation */}
+      {/* Delete Confirmation Dialog */}
       <Dialog open={!!confirmDeleteId} onClose={() => setConfirmDeleteId(null)}>
         <DialogTitle>Confirm Deletion</DialogTitle>
         <DialogContent>

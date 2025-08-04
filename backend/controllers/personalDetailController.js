@@ -3,14 +3,14 @@ import PersonalDetail from "../models/PersonalDetail.js";
 // CREATE
 export const createPersonalDetail = async (req, res) => {
   try {
-    const { fullName, birthdate, address } = req.body;
+    const { fullName, birthdate, address,age } = req.body;
     const userId = req.userId;
 
-    if (!fullName || !birthdate || !address || !userId) {
+    if (!fullName || !birthdate || !address || !userId || !age) {
       return res.status(400).json({ message: "Missing fields" });
     }
 
-    const detail = await PersonalDetail.create({ userId, fullName, birthdate, address });
+    const detail = await PersonalDetail.create({ userId, fullName, birthdate, address,age });
     res.status(201).json(detail);
   } catch (error) {
     res.status(500).json({ message: error.message });

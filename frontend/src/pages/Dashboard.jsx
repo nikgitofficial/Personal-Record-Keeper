@@ -226,12 +226,7 @@ useEffect(() => {
           </List>
         </Collapse>
 
-        <ListItem disablePadding>
-          <ListItemButton component={Link} to="/analytics" selected={location.pathname === "/analytics"}>
-            <ListItemIcon sx={{ color: 'success.main' }}><InsightsIcon /></ListItemIcon>
-            <ListItemText primary="Analytics" />
-          </ListItemButton>
-        </ListItem>
+       
 
         <ListItem disablePadding>
           <ListItemButton component={Link} to="/personal-details" selected={location.pathname === "/personal-details"}>

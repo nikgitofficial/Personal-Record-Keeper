@@ -62,6 +62,9 @@ import driverLogo from "../assets/logos/drivers2rb.png";
 import nationalLogo from "../assets/logos/nationalid.png";
 import Profile from "../pages/Profile"; 
 
+import Snackbar from "@mui/material/Snackbar";
+import MuiAlert from "@mui/material/Alert"
+
 
 
 const drawerWidth = 240;
@@ -94,6 +97,11 @@ const Dashboard = ({ children }) => {
       body1: { fontSize: "1rem" },
     },
   });
+  const [logoutSnackbarOpen, setLogoutSnackbarOpen] = useState(false);
+
+  const Alert = React.forwardRef(function Alert(props, ref) {
+  return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
+});
 
   const getCardColor = (name) => {
     const card = name.toLowerCase();
@@ -141,16 +149,18 @@ useEffect(() => {
     };
   }, []);
 
-  const handleLogout = async () => {
-    try {
-      await axios.post("/auth/logout", {}, { withCredentials: true });
-      localStorage.removeItem("accessToken");
-      setUser(null);
-      navigate("/login");
-    } catch (err) {
-      console.error("Logout error:", err.response?.data || err.message);
-    }
-  };
+ const handleLogout = async () => {
+  try {
+    await axios.post("/auth/logout", {}, { withCredentials: true });
+    localStorage.removeItem("accessToken");
+    setUser(null);
+    setLogoutSnackbarOpen(true); // Show the snackbar
+    setTimeout(() => navigate("/login"), 1500); // Wait before redirecting
+  } catch (err) {
+    console.error("Logout error:", err.response?.data || err.message);
+  }
+};
+
 
   const toggleDrawer = () => setMobileOpen(!mobileOpen);
   const toggleTheme = () => {
@@ -254,32 +264,98 @@ useEffect(() => {
     <ThemeProvider theme={theme}>
       <Box sx={{ display: "flex" }}>
         <CssBaseline />
-        <AppBar position="fixed" sx={{ zIndex: theme.zIndex.drawer + 1 }}>
-          <Toolbar>
-  <IconButton
-    color="inherit"
-    edge="start"
-    onClick={toggleDrawer}
-    sx={{ mr: 2, display: { sm: "none" } }}
-  >
-    <MenuIcon />
-  </IconButton>
+     <AppBar position="fixed" sx={{ 
+      zIndex: theme.zIndex.drawer + 1,
+      background: "linear-gradient(to right, #1e3c72, #2a5298)",
+      color: "#fff" 
 
-  <Typography variant="h6" sx={{ flexGrow: 1 }}>
-    Welcome, {user?.username || "User"}
-  </Typography>
-
-  <Typography variant="body2" sx={{ mr: 2 }}>
-    {dateTime.toLocaleString()}
-  </Typography>
-
-  <Tooltip title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"} arrow>
-    <IconButton color="inherit" onClick={toggleTheme}>
-      {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
+     }}>
+  <Toolbar>
+    <IconButton
+      color="inherit"
+      edge="start"
+      onClick={toggleDrawer}
+      sx={{ mr: 2, display: { sm: "none" } }}
+    >
+      <MenuIcon />
     </IconButton>
-  </Tooltip>
-</Toolbar>
-        </AppBar>
+
+    {/* Logo and App Name */}
+    <Box sx={{ display: "flex", alignItems: "center", mr: 2 }}>
+      <Box
+        component="img"
+        src="/favicon.ico" // Replace with your logo path if different
+        alt="Vaultify Logo"
+        sx={{ width: 32, height: 32, mr: 1 }}
+      />
+      <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+        Vaultify
+      </Typography>
+    </Box>
+
+    {/* Welcome Message */}
+ <Box
+  sx={{
+    width: "100%",
+    overflow: "hidden",
+    position: "relative",
+    height: "4rem", // enough for 2 lines
+  }}
+>
+  {/* First Message */}
+  <Typography
+    variant="h6"
+    sx={{
+      display: "inline-block",
+      position: "absolute",
+      top: 0,
+      animation: "scrollText1 12s linear infinite",
+    }}
+  >
+    Welcome, {user?.username || "Nikko"}
+  </Typography>
+
+  {/* Second Message */}
+  <Typography
+    variant="h6"
+    sx={{
+      display: "inline-block",
+      position: "absolute",
+      top: "2rem",
+      animation: "scrollText2 15s linear infinite",
+    }}
+  >
+    Vaultify Tip: Your data is encrypted end-to-end.
+  </Typography>
+
+  <style>
+    {`
+      @keyframes scrollText1 {
+        0% { transform: translateX(100%); }
+        100% { transform: translateX(-100%); }
+      }
+
+      @keyframes scrollText2 {
+        0% { transform: translateX(100%); }
+        100% { transform: translateX(-100%); }
+      }
+    `}
+  </style>
+</Box>
+
+
+    <Typography variant="body2" sx={{ mr: 2 }}>
+      {dateTime.toLocaleString()}
+    </Typography>
+
+    <Tooltip title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"} arrow>
+      <IconButton color="inherit" onClick={toggleTheme}>
+        {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
+      </IconButton>
+    </Tooltip>
+  </Toolbar>
+</AppBar>
+
 
         <Box component="nav" sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}>
           <Drawer
@@ -444,13 +520,19 @@ useEffect(() => {
 
       </Stack>
 
-      <Typography
-        variant="body2"
-        color="text.secondary"
-        sx={{ fontSize: "0.8rem" }}
-      >
-        &copy; {new Date().getFullYear()} My ID Card App. All rights reserved.
-      </Typography>
+  <Typography
+  variant="body2"
+  color="text.secondary"
+  align="center"
+  sx={{
+    fontSize: { xs: "0.75rem", sm: "0.85rem" },
+    mt: 4,
+    pb: 2,
+    fontWeight: 300,
+  }}
+>
+  &copy; {new Date().getFullYear()} Vaultify . All rights reserved. Built by <strong style={{ color: "#1976d2" }}>Nikpacs</strong>.
+</Typography>
     </Box>
       
     
@@ -484,6 +566,17 @@ useEffect(() => {
     <Profile />
   </DialogContent>
 </Dialog>
+<Snackbar
+  open={logoutSnackbarOpen}
+  autoHideDuration={3000}
+  onClose={() => setLogoutSnackbarOpen(false)}
+  anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+>
+  <Alert onClose={() => setLogoutSnackbarOpen(false)} severity="success" sx={{ width: '100%' }}>
+    You have been logged out successfully.
+  </Alert>
+</Snackbar>
+
 
     </ThemeProvider>
   );

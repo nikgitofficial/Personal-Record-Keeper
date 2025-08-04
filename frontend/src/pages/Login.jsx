@@ -1,6 +1,7 @@
 import { useState, useContext } from "react";
 import {
-  Container, Box, TextField, Button, Typography, Paper, Divider, Alert
+  Container, Box, TextField, Button, Typography,
+  Paper, Divider, Alert, Snackbar, CircularProgress
 } from "@mui/material";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "../api/axios";
@@ -9,17 +10,22 @@ import { AuthContext } from "../context/AuthContext";
 const Login = () => {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
-  const navigate = useNavigate();
-  const { setUser } = useContext(AuthContext); // ✅ Get setUser
+  const [loading, setLoading] = useState(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
 
-  const handleChange = e => {
+  const navigate = useNavigate();
+  const { setUser } = useContext(AuthContext);
+
+  const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+    setLoading(true);
+
     try {
-      // 🔐 Login
       const res = await axios.post("/auth/login", form, {
         withCredentials: true,
       });
@@ -27,17 +33,21 @@ const Login = () => {
       const accessToken = res.data.accessToken;
       localStorage.setItem("accessToken", accessToken);
 
-      // ✅ Fetch user right after login
       const me = await axios.get("/auth/me", {
         headers: { Authorization: `Bearer ${accessToken}` },
         withCredentials: true,
       });
 
-      setUser(me.data); // ✅ Update context
+      setUser(me.data);
+      setSnackbarOpen(true); // Show success snackbar
 
-      navigate("/"); // ✅ Safe redirect
+      setTimeout(() => {
+        navigate("/"); // Navigate after brief delay
+      }, 1000);
     } catch (err) {
       setError(err.response?.data?.msg || "Login failed");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -80,8 +90,9 @@ const Login = () => {
             variant="contained"
             fullWidth
             sx={{ mt: 2, py: 1.5 }}
+            disabled={loading}
           >
-            Login
+            {loading ? <CircularProgress size={24} color="inherit" /> : "Login"}
           </Button>
         </Box>
 
@@ -92,6 +103,14 @@ const Login = () => {
           </Link>
         </Typography>
       </Paper>
+
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        message="Login successful!"
+      />
     </Container>
   );
 };

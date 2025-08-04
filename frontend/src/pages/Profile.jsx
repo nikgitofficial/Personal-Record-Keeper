@@ -6,9 +6,13 @@ import {
   Snackbar,
   Typography,
   Stack,
+  Box,
+  Paper,
+  IconButton,
 } from '@mui/material';
 import axios from '../api/axios';
 import { AuthContext } from '../context/AuthContext';
+import PhotoCamera from '@mui/icons-material/PhotoCamera';
 
 const Profile = () => {
   const { user, setUser } = useContext(AuthContext);
@@ -30,7 +34,7 @@ const Profile = () => {
       const res = await axios.post('/profile/upload-profile-pic', formData);
       setUser((prev) => ({ ...prev, profilePic: res.data.profilePic }));
       setSnackbar({ open: true, message: 'Profile picture updated!' });
-      setImage(null); // clear after success
+      setImage(null);
     } catch (error) {
       setSnackbar({ open: true, message: 'Upload failed!' });
     } finally {
@@ -45,38 +49,66 @@ const Profile = () => {
   };
 
   return (
-    <div style={{ padding: 24 }}>
-      <Typography variant="h5" gutterBottom>
+    <Box
+      component={Paper}
+      elevation={3}
+      sx={{
+        maxWidth: 500,
+        margin: 'auto',
+        mt: 4,
+        p: 4,
+        borderRadius: 3,
+        textAlign: 'center',
+        backgroundColor: 'background.default',
+      }}
+    >
+      <Typography variant="h5" gutterBottom fontWeight="bold">
         Profile Picture
       </Typography>
 
-      <Avatar
-        src={user.profilePic}
-        alt="Profile"
-        sx={{ width: 120, height: 120, mb: 2 }}
-      />
+      <Box sx={{ position: 'relative', display: 'inline-block', mb: 2 }}>
+        <Avatar
+          src={user.profilePic}
+          alt="Profile"
+          sx={{ width: 140, height: 140, mx: 'auto' }}
+        />
+        <IconButton
+          component="label"
+          sx={{
+            position: 'absolute',
+            bottom: 0,
+            right: 0,
+            backgroundColor: 'primary.main',
+            color: 'white',
+            '&:hover': { backgroundColor: 'primary.dark' },
+          }}
+        >
+          <PhotoCamera />
+          <input
+            ref={fileInputRef}
+            hidden
+            accept="image/*"
+            type="file"
+            onChange={(e) => {
+              const file = e.target.files[0];
+              setImage(file);
+              if (file) {
+                const preview = URL.createObjectURL(file);
+                setUser((prev) => ({ ...prev, profilePic: preview }));
+              }
+            }}
+          />
+        </IconButton>
+      </Box>
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        onChange={(e) => {
-          const file = e.target.files[0];
-          setImage(file);
-          if (file) {
-            const preview = URL.createObjectURL(file);
-            setUser((prev) => ({ ...prev, profilePic: preview }));
-          }
-        }}
-      />
-
-      <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+      <Stack direction="row" spacing={2} justifyContent="center" sx={{ mt: 2 }}>
         <Button
           variant="contained"
           onClick={handleUpload}
           disabled={loading || !image}
+          sx={{ minWidth: 160 }}
         >
-          {loading ? <CircularProgress size={24} /> : 'Upload Profile Pic'}
+          {loading ? <CircularProgress size={24} color="inherit" /> : 'Upload'}
         </Button>
 
         {image && (
@@ -85,6 +117,7 @@ const Profile = () => {
             color="error"
             onClick={handleCancel}
             disabled={loading}
+            sx={{ minWidth: 160 }}
           >
             Cancel
           </Button>
@@ -96,9 +129,9 @@ const Profile = () => {
         onClose={() => setSnackbar({ open: false, message: '' })}
         autoHideDuration={3000}
         message={snackbar.message}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }} 
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       />
-    </div>
+    </Box>
   );
 };
 

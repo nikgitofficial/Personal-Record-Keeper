@@ -17,7 +17,6 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import axios from '../api/axios';
 import CloseIcon from '@mui/icons-material/Close';
 
-
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
@@ -65,54 +64,47 @@ const UserFileUploader = () => {
   }, []);
 
   const handleUpload = async (e) => {
-  e.preventDefault();
-  if (!file) {
-    showSnackbar('❗ Please select a file', 'warning');
-    return;
-  }
-
-  const formData = new FormData();
-  formData.append('file', file);
-  setUploading(true);
-
-  // Simulate gradual progress
-  let simulatedProgress = 0;
-  const progressInterval = setInterval(() => {
-    simulatedProgress += 10; // increase by 10% each tick
-    if (simulatedProgress > 100) simulatedProgress = 100; // cap at 100%
-    // Simulate a realistic upload speed
-    if (simulatedProgress >= 90) {
-      clearInterval(progressInterval); // stop when near 100
+    e.preventDefault();
+    if (!file) {
+      showSnackbar('❗ Please select a file', 'warning');
+      return;
     }
-    setUploadProgress(simulatedProgress);
-  }, 100); // 100ms per tick
 
-  try {
-    await axios.post('/files/upload', formData, {
-      headers: { Authorization: `Bearer ${token}` },
-      withCredentials: true,
-    });
+    const formData = new FormData();
+    formData.append('file', file);
+    setUploading(true);
 
-    // Jump to 100% once uploaded
-    setUploadProgress(100);
-    setTimeout(() => {
-      setUploadProgress(0);
+    let simulatedProgress = 0;
+    const progressInterval = setInterval(() => {
+      simulatedProgress += 10;
+      if (simulatedProgress > 100) simulatedProgress = 100;
+      if (simulatedProgress >= 90) clearInterval(progressInterval);
+      setUploadProgress(simulatedProgress);
+    }, 100);
+
+    try {
+      await axios.post('/files/upload', formData, {
+        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true,
+      });
+
+      setUploadProgress(100);
+      setTimeout(() => {
+        setUploadProgress(0);
+        setUploading(false);
+        showSnackbar('✅ File uploaded!');
+        setFile(null);
+        e.target.reset();
+        fetchFiles();
+      }, 500);
+    } catch (err) {
+      console.error('❌ Upload failed:', err);
+      showSnackbar('❌ Upload failed', 'error');
+      clearInterval(progressInterval);
       setUploading(false);
-      showSnackbar('✅ File uploaded!');
-      setFile(null);
-      e.target.reset();
-      fetchFiles();
-    }, 500); // brief delay to show 100%
-  } catch (err) {
-    console.error('❌ Upload failed:', err);
-    showSnackbar('❌ Upload failed', 'error');
-    clearInterval(progressInterval);
-    setUploading(false);
-    setUploadProgress(0);
-  }
-};
-
-  
+      setUploadProgress(0);
+    }
+  };
 
   const handleEditSubmit = async () => {
     setEditing(true);
@@ -163,18 +155,28 @@ const UserFileUploader = () => {
       width: '100%',
       maxWidth: 1000,
       px: 2,
-      py: 3
+      py: 3,
     }}>
-      <Container maxWidth="md" sx={{ background: '#fff', boxShadow: 3, borderRadius: 2, p: 3 }}>
+      <Container
+        maxWidth="md"
+        sx={{
+          backgroundColor: theme.palette.background.paper,
+          boxShadow: 3,
+          borderRadius: 2,
+          p: 3,
+        }}
+      >
         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-  <Tooltip title="Close">
-    <IconButton onClick={() => navigate(-1)} size="large">
-      <CloseIcon />
-    </IconButton>
-  </Tooltip>
-</Box>
+          <Tooltip title="Close">
+            <IconButton onClick={() => navigate(-1)} size="large">
+              <CloseIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
 
-        <Typography variant="h5" gutterBottom align="center">📤 Upload a File</Typography>
+        <Typography variant="h5" gutterBottom align="center">
+          📤 Upload a File
+        </Typography>
 
         <form onSubmit={handleUpload}>
           <input
@@ -182,52 +184,46 @@ const UserFileUploader = () => {
             onChange={(e) => setFile(e.target.files[0])}
             style={{ marginBottom: '1rem' }}
           />
-         <Button
-  type="submit"
-  variant="contained"
-  fullWidth
-  disabled={uploading}
-  sx={{ height: 48 }}
->
-  {uploading ? (
-    <Box sx={{ position: 'relative', width: 40, height: 40, mx: 'auto' }}>
-      <CircularProgress
-        variant="determinate"
-        value={uploadProgress}
-        size={40}
-        thickness={4}
-        sx={{
-          color: 'green',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-        }}
-      />
-      <Box
-        sx={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Typography
-          variant="caption"
-          sx={{ fontWeight: 'bold', color: 'black' }}
-        >
-          {uploadProgress}%
-        </Typography>
-      </Box>
-    </Box>
-  ) : (
-    'Upload'
-  )}
-</Button>
-
+          <Button
+            type="submit"
+            variant="contained"
+            fullWidth
+            disabled={uploading}
+            sx={{ height: 48 }}
+          >
+            {uploading ? (
+              <Box sx={{ position: 'relative', width: 40, height: 40, mx: 'auto' }}>
+                <CircularProgress
+                  variant="determinate"
+                  value={uploadProgress}
+                  size={40}
+                  thickness={4}
+                  sx={{
+                    color: 'green',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                  }}
+                />
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'black' }}>
+                    {uploadProgress}%
+                  </Typography>
+                </Box>
+              </Box>
+            ) : 'Upload'}
+          </Button>
         </form>
 
         <TextField
@@ -260,58 +256,55 @@ const UserFileUploader = () => {
                   <TableCell align="right">Actions</TableCell>
                 </TableRow>
               </TableHead>
-             
-                     <TableBody>
-  {filteredFiles.map((f) => (
-    <TableRow
-      key={f._id}
-      hover
-      sx={{
-        cursor: 'pointer',
-        '&:hover': {
-          backgroundColor: '#f5f5f5',
-        },
-      }}
-    >
-      <TableCell>
-        <Tooltip title="Open file">
-          <Button onClick={() => navigate(`/preview/${f._id}`)} sx={{ textTransform: 'none' }}>
-            {f.filename}
-          </Button>
-        </Tooltip>
-      </TableCell>
-      <TableCell>{new Date(f.createdAt).toLocaleString()}</TableCell>
-      <TableCell align="right">
-        <Tooltip title="Rename">
-          <IconButton
-            size="small"
-            color="secondary"
-            onClick={() =>
-              setEditDialog({ open: true, id: f._id, oldName: f.filename, newName: f.filename })
-            }
-          >
-            <EditIcon />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Delete">
-          <IconButton
-            size="small"
-            color="error"
-            onClick={() => setDeleteDialog({ open: true, id: f._id })}
-          >
-            <DeleteIcon />
-          </IconButton>
-        </Tooltip>
-      </TableCell>
-    </TableRow>
-  ))}
-</TableBody>
-
+              <TableBody>
+                {filteredFiles.map((f) => (
+                  <TableRow
+                    key={f._id}
+                    hover
+                    sx={{
+                      cursor: 'pointer',
+                      '&:hover': {
+                        backgroundColor: theme.palette.action.hover,
+                      },
+                    }}
+                  >
+                    <TableCell>
+                      <Tooltip title="Open file">
+                        <Button onClick={() => navigate(`/preview/${f._id}`)} sx={{ textTransform: 'none' }}>
+                          {f.filename}
+                        </Button>
+                      </Tooltip>
+                    </TableCell>
+                    <TableCell>{new Date(f.createdAt).toLocaleString()}</TableCell>
+                    <TableCell align="right">
+                      <Tooltip title="Rename">
+                        <IconButton
+                          size="small"
+                          color="secondary"
+                          onClick={() =>
+                            setEditDialog({ open: true, id: f._id, oldName: f.filename, newName: f.filename })
+                          }
+                        >
+                          <EditIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Delete">
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => setDeleteDialog({ open: true, id: f._id })}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
             </Table>
           </TableContainer>
         )}
 
-        {/* Snackbar */}
         <Snackbar
           open={snackbar.open}
           autoHideDuration={3000}
@@ -321,13 +314,15 @@ const UserFileUploader = () => {
           <Alert
             onClose={() => setSnackbar({ ...snackbar, open: false })}
             severity={snackbar.severity}
-            sx={{ width: '100%' }}
+            sx={{
+              width: '100%',
+              backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[900] : undefined,
+            }}
           >
             {snackbar.message}
           </Alert>
         </Snackbar>
 
-        {/* Edit Dialog */}
         <Dialog open={editDialog.open} onClose={() => setEditDialog({ ...editDialog, open: false })} fullWidth maxWidth="xs">
           <DialogTitle>Rename File</DialogTitle>
           <DialogContent>
@@ -347,7 +342,6 @@ const UserFileUploader = () => {
           </DialogActions>
         </Dialog>
 
-        {/* Delete Dialog */}
         <Dialog
           open={deleteDialog.open}
           onClose={() => setDeleteDialog({ open: false, id: '' })}

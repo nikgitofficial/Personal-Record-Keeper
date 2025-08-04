@@ -22,11 +22,14 @@ import {
   Collapse,
   CircularProgress,
   Tooltip,
-  
-  
-   Stack
+  Stack
 } from "@mui/material";
+import DialogContent from "@mui/material/DialogContent";
+import CloseIcon from "@mui/icons-material/Close";
+import DialogTitle from "@mui/material/DialogTitle";
+import Dialog from "@mui/material/Dialog";
 import {
+  
   Menu as MenuIcon,
   Logout as LogoutIcon,
   Home as HomeIcon,
@@ -57,6 +60,9 @@ import pagibigLogo from "../assets/logos/pagibig.png";
 import umidLogo from "../assets/logos/umid.png";
 import driverLogo from "../assets/logos/drivers2rb.png";
 import nationalLogo from "../assets/logos/nationalid.png";
+import Profile from "../pages/Profile"; 
+
+
 
 const drawerWidth = 240;
 
@@ -73,6 +79,10 @@ const Dashboard = ({ children }) => {
   const [settingsOpen, setSettingsOpen] = useState(
     location.pathname === "/profile" || location.pathname === "/settings"
   );
+
+  const [openProfile, setOpenProfile] = useState(false);
+  const handleOpenProfile = () => setOpenProfile(true);
+  const handleCloseProfile = () => setOpenProfile(false);
 
   const theme = createTheme({
     palette: {
@@ -165,13 +175,24 @@ useEffect(() => {
   const drawer = (
     <Box>
       <Box textAlign="center" p={2} sx={{ pt: { xs: 8, sm: 10 } }}>
-        <Avatar
-          src={user?.profilePic || ""}
-          alt={user?.username}
-          sx={{ width: 80, height: 80, mx: "auto", mb: 1, bgcolor: "primary.main", fontSize: 32 }}
-        >
-          {!user?.profilePic && (user?.username?.[0]?.toUpperCase() || "U")}
-        </Avatar>
+        <IconButton onClick={handleOpenProfile} sx={{ p: 0 }}>
+  <Avatar
+    src={user?.profilePic || ""}
+    alt={user?.username}
+    sx={{
+      width: 80,
+      height: 80,
+      mx: "auto",
+      mb: 1,
+      bgcolor: "primary.main",
+      fontSize: 32,
+      cursor: "pointer",
+    }}
+  >
+    {!user?.profilePic && (user?.username?.[0]?.toUpperCase() || "U")}
+  </Avatar>
+</IconButton>
+
         <Typography variant="subtitle1" fontWeight="bold">{user?.username || "User"}</Typography>
         <Typography variant="body2" color="text.secondary">{user?.email || "N/A"}</Typography>
       </Box>
@@ -193,10 +214,11 @@ useEffect(() => {
         </ListItem>
         <Collapse in={settingsOpen} timeout="auto" unmountOnExit>
           <List component="div" disablePadding sx={{ pl: 4 }}>
-            <ListItemButton component={Link} to="/profile" selected={location.pathname === "/profile"}>
-              <ListItemIcon><AccountCircleIcon /></ListItemIcon>
-              <ListItemText primary="Profile" />
-            </ListItemButton>
+           <ListItemButton onClick={handleOpenProfile}>
+  <ListItemIcon><AccountCircleIcon /></ListItemIcon>
+  <ListItemText primary="Profile" />
+</ListItemButton>
+
            <ListItemButton component={Link} to="/settings" selected={location.pathname === "/settings"}>
   <ListItemIcon><CreditCardIcon sx={{ color: 'secondary.main' }} /></ListItemIcon>
   <ListItemText primary="Manage Cards" />
@@ -441,6 +463,33 @@ useEffect(() => {
         </Box>
         
       </Box>
+      <Dialog
+  open={openProfile}
+  onClose={handleCloseProfile}
+  fullWidth
+  maxWidth="sm"
+  scroll="paper"
+>
+  <DialogTitle sx={{ m: 0, p: 2 }}>
+    Profile
+    <IconButton
+      aria-label="close"
+      onClick={handleCloseProfile}
+      sx={{
+        position: "absolute",
+        right: 8,
+        top: 8,
+        color: (theme) => theme.palette.grey[500],
+      }}
+    >
+      <CloseIcon />
+    </IconButton>
+  </DialogTitle>
+  <DialogContent dividers>
+    <Profile />
+  </DialogContent>
+</Dialog>
+
     </ThemeProvider>
   );
 };

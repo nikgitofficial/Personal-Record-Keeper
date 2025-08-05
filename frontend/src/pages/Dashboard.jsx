@@ -353,6 +353,13 @@ useEffect(() => {
         {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
       </IconButton>
     </Tooltip>
+      <Box sx={{ display: { xs: "flex", sm: "none" }, ml: 1 }}>
+      <Tooltip title="Logout" arrow>
+        <IconButton color="inherit" onClick={handleLogout}>
+          <LogoutIcon />
+        </IconButton>
+      </Tooltip>
+    </Box>
   </Toolbar>
 </AppBar>
 

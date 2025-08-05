@@ -1,13 +1,14 @@
 import { createContext, useState, useEffect } from "react";
-import axios from "../api/axios";
+import axios from "../api/axios"; // ✅ custom instance
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true); // prevent rendering before auth check
-  const [loadingPercent, setLoadingPercent] = useState(0); // NEW: loading progress
+  const [loading, setLoading] = useState(true);
+  const [loadingPercent, setLoadingPercent] = useState(0);
 
+  // Simulate loading progress bar
   const simulateProgress = () => {
     let percent = 0;
     const interval = setInterval(() => {
@@ -21,47 +22,19 @@ export const AuthProvider = ({ children }) => {
   };
 
   const getMe = async () => {
-    simulateProgress(); // NEW: simulate loading bar
+    simulateProgress();
 
     try {
-      const token = localStorage.getItem("accessToken");
-
-      const res = await axios.get("/auth/me", {
-        headers: { Authorization: `Bearer ${token}` },
-        withCredentials: true,
-      });
-
+      const res = await axios.get("/auth/me"); // ✅ uses instance with interceptor
       setUser(res.data);
-      setLoadingPercent(100); // ✅ done
+      setLoadingPercent(100);
     } catch (err) {
-      if (err.response?.status === 401 || err.response?.status === 403) {
-        try {
-          const refreshRes = await axios.get("/auth/refresh", {
-            withCredentials: true,
-          });
-
-          const newToken = refreshRes.data.accessToken;
-          localStorage.setItem("accessToken", newToken);
-
-          const retryRes = await axios.get("/auth/me", {
-            headers: { Authorization: `Bearer ${newToken}` },
-            withCredentials: true,
-          });
-
-          setUser(retryRes.data);
-          setLoadingPercent(100); // ✅ done
-        } catch (refreshErr) {
-          console.error("Refresh failed:", refreshErr.message);
-          setUser(null);
-        }
-      } else {
-        console.error("Auth error:", err.message);
-        setUser(null);
-      }
+      console.error("Auth check failed:", err.message);
+      setUser(null);
     } finally {
       setTimeout(() => {
         setLoading(false);
-      }, 300); // small delay to allow UI to show 100%
+      }, 300); // delay for UI completion
     }
   };
 
@@ -69,7 +42,7 @@ export const AuthProvider = ({ children }) => {
     getMe();
   }, []);
 
-  // ✅ Keep user state updatable from other components
+  // Optional: update user globally
   const updateUser = (updatedUser) => {
     setUser(updatedUser);
     localStorage.setItem("user", JSON.stringify(updatedUser)); // optional
@@ -78,7 +51,6 @@ export const AuthProvider = ({ children }) => {
   return (
     <AuthContext.Provider value={{ user, setUser, updateUser }}>
       {loading ? (
-        // ✅ Optional loading UI
         <div
           style={{
             display: "flex",

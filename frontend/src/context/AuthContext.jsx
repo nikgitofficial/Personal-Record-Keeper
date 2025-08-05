@@ -6,8 +6,23 @@ export const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true); // prevent rendering before auth check
+  const [loadingPercent, setLoadingPercent] = useState(0); // NEW: loading progress
+
+  const simulateProgress = () => {
+    let percent = 0;
+    const interval = setInterval(() => {
+      percent += 10;
+      if (percent >= 90) {
+        clearInterval(interval);
+      } else {
+        setLoadingPercent(percent);
+      }
+    }, 100);
+  };
 
   const getMe = async () => {
+    simulateProgress(); // NEW: simulate loading bar
+
     try {
       const token = localStorage.getItem("accessToken");
 
@@ -17,9 +32,9 @@ export const AuthProvider = ({ children }) => {
       });
 
       setUser(res.data);
+      setLoadingPercent(100); // ✅ done
     } catch (err) {
       if (err.response?.status === 401 || err.response?.status === 403) {
-        // Token expired? Try refresh
         try {
           const refreshRes = await axios.get("/auth/refresh", {
             withCredentials: true,
@@ -34,6 +49,7 @@ export const AuthProvider = ({ children }) => {
           });
 
           setUser(retryRes.data);
+          setLoadingPercent(100); // ✅ done
         } catch (refreshErr) {
           console.error("Refresh failed:", refreshErr.message);
           setUser(null);
@@ -43,7 +59,9 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
       }
     } finally {
-      setLoading(false);
+      setTimeout(() => {
+        setLoading(false);
+      }, 300); // small delay to allow UI to show 100%
     }
   };
 
@@ -51,15 +69,32 @@ export const AuthProvider = ({ children }) => {
     getMe();
   }, []);
 
-  // ✅ Add this function to allow profilePic (or entire user) updates
+  // ✅ Keep user state updatable from other components
   const updateUser = (updatedUser) => {
     setUser(updatedUser);
-    localStorage.setItem("user", JSON.stringify(updatedUser)); // optional: if you're storing user in localStorage
+    localStorage.setItem("user", JSON.stringify(updatedUser)); // optional
   };
 
   return (
     <AuthContext.Provider value={{ user, setUser, updateUser }}>
-      {!loading && children}
+      {loading ? (
+        // ✅ Optional loading UI
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            height: "100vh",
+            fontFamily: "sans-serif",
+          }}
+        >
+          <p>Authenticating... {loadingPercent}%</p>
+          <progress value={loadingPercent} max="100" style={{ width: "200px" }} />
+        </div>
+      ) : (
+        children
+      )}
     </AuthContext.Provider>
   );
 };

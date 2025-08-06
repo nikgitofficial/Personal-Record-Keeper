@@ -6,6 +6,16 @@ const instance = axios.create({
   withCredentials: true, // allows sending refresh token cookie
 });
 
+// Automatically attach token to every request
+instance.interceptors.request.use((config) => {
+  const token = localStorage.getItem("accessToken");
+  if (token) {
+    config.headers["Authorization"] = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Handle 401 Unauthorized and try refresh
 instance.interceptors.response.use(
   (res) => res,
   async (error) => {
@@ -14,24 +24,16 @@ instance.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      const refreshToken = localStorage.getItem("refreshToken");
-      if (!refreshToken) return Promise.reject(error);
-
       try {
-        const res = await instance.get("/auth/refresh", {
-          headers: {
-            Authorization: `Bearer ${refreshToken}`,
-          },
-        });
-
+        const res = await instance.get("/auth/refresh"); // ✅ using instance here
         const newToken = res.data.accessToken;
-        localStorage.setItem("accessToken", newToken);
 
+        localStorage.setItem("accessToken", newToken);
         originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
+
         return instance(originalRequest);
       } catch (refreshError) {
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("accessToken"); // optional cleanup
         return Promise.reject(refreshError);
       }
     }
@@ -39,8 +41,5 @@ instance.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-
-
 
 export default instance;

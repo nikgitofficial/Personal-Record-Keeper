@@ -1,0 +1,536 @@
+set up for cockies 
+
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import User from "../models/User.js";
+import { createAccessToken, createRefreshToken } from "../utils/tokenUtils.js";
+
+export const register = async (req, res) => {
+  const { username, email, password } = req.body;
+  const existingUser = await User.findOne({ email });
+  if (existingUser) return res.status(400).json({ msg: "User already exists" });
+
+  const hashed = await bcrypt.hash(password, 10);
+  const newUser = new User({ username, email, password: hashed });
+  await newUser.save();
+
+  res.status(201).json({ msg: "Registered successfully" });
+};
+
+export const login = async (req, res) => {
+  const { email, password } = req.body;
+  const user = await User.findOne({ email });
+  if (!user) return res.status(400).json({ msg: "User not found" });
+
+  const match = await bcrypt.compare(password, user.password);
+  if (!match) return res.status(400).json({ msg: "Invalid credentials" });
+
+  const payload = { id: user._id, username: user.username };
+  const accessToken = createAccessToken(payload);
+  const refreshToken = createRefreshToken(payload);
+
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "None",
+    path: "/",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+
+  res.json({ accessToken });
+};
+
+export const refresh = (req, res) => {
+  const token = req.cookies.refreshToken;
+
+  console.log("📦 Cookies received:", req.cookies);
+
+  if (!token) {
+    console.log("❌ No refreshToken found in cookies");
+    return res.sendStatus(401);
+  }
+
+  jwt.verify(token, process.env.JWT_REFRESH_SECRET, (err, user) => {
+    if (err) {
+      console.log("❌ Refresh token invalid:", err.message);
+      return res.sendStatus(403);
+    }
+
+    const newAccessToken = createAccessToken({ id: user.id, username: user.username });
+    console.log("✅ Refresh successful, new access token issued");
+    res.json({ accessToken: newAccessToken });
+  });
+};
+
+
+export const me = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user) return res.status(404).json({ msg: "User not found" });
+
+    res.json(user);
+  } catch (err) {
+    console.error("Auth me error:", err);
+    res.status(500).json({ msg: "Server error" });
+  }
+};
+
+export const logout = (req, res) => {
+  res.clearCookie("refreshToken", {
+    path: "/",
+    secure: true,
+    sameSite: "None",
+  });
+  res.json({ msg: "Logged out" });
+};
+
+export const updateUsername = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { username } = req.body;
+
+    if (!username) return res.status(400).json({ message: "Username is required" });
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { username },
+      { new: true }
+    );
+
+    res.json({ user: updatedUser });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+import jwt from "jsonwebtoken";
+
+export const authenticate = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.sendStatus(401);
+
+  const token = authHeader.split(" ")[1];
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) return res.sendStatus(403);
+    req.user = user;
+    next();
+  });
+};
+  import jwt from "jsonwebtoken";
+
+  const verifyToken = (req, res, next) => {
+    const token = req.cookies?.accessToken || req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      return res.status(401).json({ msg: "Access denied. No token provided." });
+    }
+
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      req.user = decoded;            
+      req.userId = decoded.id;         
+      next();
+    } catch (err) {
+      res.status(400).json({ msg: "Invalid token" });
+    }
+  };
+
+  export default verifyToken;
+
+
+
+import mongoose from "mongoose";
+
+const userSchema = new mongoose.Schema({
+  username: { type: String, required: true },
+  email:    { type: String, required: true },
+  password: { type: String, required: true },
+  profilePic: { type: String,default:""},
+}, { timestamps: true });
+
+
+const User = mongoose.model('User', userSchema);
+export default User;
+import express from "express";
+import {
+  register,
+  login,
+  refresh,
+  me,
+  logout,
+  updateUsername,
+} from "../controllers/authController.js";
+import { authenticate } from "../middleware/authMiddleware.js";
+
+
+const router = express.Router();
+
+
+// ✅ Auth routes
+router.post("/register", register);
+router.post("/login", login);
+router.get("/refresh", refresh);
+router.get("/me", authenticate, me);
+router.post("/logout", logout);
+router.patch("/update-username", authenticate, updateUsername);
+
+
+export default router;
+import axios from "../api/axios";
+
+export const refreshAccessToken = async () => {
+  try {
+    const response = await axios.get("/auth/refresh", {
+      withCredentials: true, 
+    });
+
+    const { accessToken } = response.data;
+    if (accessToken) {
+      localStorage.setItem("accessToken", accessToken);
+      return accessToken;
+    } else {
+      throw new Error("No access token returned");
+    }
+  } catch (err) {
+    console.error("Failed to refresh token:", err.response?.data || err.message);
+    return null;
+  }
+};
+import express from "express";
+import cors from "cors";
+import cookieParser from "cookie-parser";
+import dotenv from "dotenv";
+import mongoose from "mongoose";
+
+import authRoutes from "./routes/authRoutes.js";
+import idCardRoutes from "./routes/idCardRoutes.js";
+import personalDetailRoutes from "./routes/personalDetail.js";
+import profileRoutes from './routes/profileRoutes.js';
+import fileRoutes from './routes/fileRoutes.js';
+
+
+dotenv.config();
+const app = express();
+
+// ✅ Environment variables
+const PORT = process.env.PORT || 5000;
+
+const CLIENT_URLS = [
+  process.env.CLIENT_URL || "http://localhost:5173",
+  "http://localhost:5173", // local dev
+  "https://personal-record-keeper.vercel.app", // deployed frontend
+];
+
+// ✅ CORS configuration
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || CLIENT_URLS.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("CORS not allowed for this origin: " + origin));
+    }
+  },
+  credentials: true,
+}));
+// ✅ Middleware
+app.use(express.json());
+app.use(cookieParser());
+
+// ✅ API Routes
+app.use("/api/auth", authRoutes);
+app.use("/api/id-cards", idCardRoutes);
+app.use("/api/personal-details", personalDetailRoutes);
+app.use('/api/profile', profileRoutes);
+app.use('/api/files', fileRoutes);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ✅ MongoDB + Server Start
+mongoose.connect(process.env.MONGO_URI, {
+  
+}).then(() => {
+  app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+}).catch((err) => {
+  console.error("❌ MongoDB connection error:", err);
+});
+// src/api/axios.js
+import axios from "axios";
+
+const instance = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
+  withCredentials: true, // allows sending refresh token cookie
+});
+
+// Automatically attach token to every request
+instance.interceptors.request.use((config) => {
+  const token = localStorage.getItem("accessToken");
+  if (token) {
+    config.headers["Authorization"] = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Handle 401 Unauthorized and try refresh
+instance.interceptors.response.use(
+  (res) => res,
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        const res = await instance.get("/auth/refresh"); // ✅ using instance here
+        const newToken = res.data.accessToken;
+
+        localStorage.setItem("accessToken", newToken);
+        originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
+
+        return instance(originalRequest);
+      } catch (refreshError) {
+        localStorage.removeItem("accessToken"); // optional cleanup
+        return Promise.reject(refreshError);
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+export default instance;
+import { createContext, useState, useEffect } from "react";
+import axios from "../api/axios"; // ✅ custom instance
+
+export const AuthContext = createContext();
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [loadingPercent, setLoadingPercent] = useState(0);
+
+  // Simulate loading progress bar
+  const simulateProgress = () => {
+    let percent = 0;
+    const interval = setInterval(() => {
+      percent += 10;
+      if (percent >= 90) {
+        clearInterval(interval);
+      } else {
+        setLoadingPercent(percent);
+      }
+    }, 100);
+  };
+
+  const getMe = async () => {
+    simulateProgress();
+
+    try {
+      const res = await axios.get("/auth/me"); // ✅ uses instance with interceptor
+      setUser(res.data);
+      setLoadingPercent(100);
+    } catch (err) {
+      console.error("Auth check failed:", err.message);
+      setUser(null);
+    } finally {
+      setTimeout(() => {
+        setLoading(false);
+      }, 300); // delay for UI completion
+    }
+  };
+
+  useEffect(() => {
+    getMe();
+  }, []);
+
+  // Optional: update user globally
+  const updateUser = (updatedUser) => {
+    setUser(updatedUser);
+    localStorage.setItem("user", JSON.stringify(updatedUser)); // optional
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, setUser, updateUser }}>
+      {loading ? (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            height: "100vh",
+            fontFamily: "sans-serif",
+          }}
+        >
+          <p>Authenticating... {loadingPercent}%</p>
+          <progress value={loadingPercent} max="100" style={{ width: "200px" }} />
+        </div>
+      ) : (
+        children
+      )}
+    </AuthContext.Provider>
+  );
+};
+import { useState, useContext } from "react";
+import {
+  Container, Box, TextField, Button, Typography,
+  Paper, Divider, Alert, Snackbar, CircularProgress
+} from "@mui/material";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "../api/axios";
+import { AuthContext } from "../context/AuthContext";
+
+const Login = () => {
+  const [form, setForm] = useState({ email: "", password: "" });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+
+  const navigate = useNavigate();
+  const { setUser } = useContext(AuthContext);
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      const res = await axios.post("/auth/login", form, {
+        withCredentials: true,
+      });
+
+      const accessToken = res.data.accessToken;
+      localStorage.setItem("accessToken", accessToken);
+
+      const me = await axios.get("/auth/me", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        withCredentials: true,
+      });
+
+      setUser(me.data);
+      setSnackbarOpen(true); // Show success snackbar
+
+      setTimeout(() => {
+        navigate("/"); // Navigate after brief delay
+      }, 1000);
+    } catch (err) {
+      setError(err.response?.data?.msg || "Login failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Container maxWidth="sm">
+      <Paper elevation={6} sx={{ p: 4, mt: 10, borderRadius: 4 }}>
+        <Typography variant="h4" align="center" gutterBottom>
+          Welcome Back
+        </Typography>
+        <Typography variant="subtitle1" align="center" gutterBottom>
+          Login to continue
+        </Typography>
+        <Divider sx={{ mb: 3 }} />
+
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
+        <Box component="form" onSubmit={handleSubmit} noValidate>
+          <TextField
+            name="email"
+            label="Email"
+            type="email"
+            value={form.email}
+            onChange={handleChange}
+            fullWidth
+            required
+            margin="normal"
+          />
+          <TextField
+            name="password"
+            label="Password"
+            type="password"
+            value={form.password}
+            onChange={handleChange}
+            fullWidth
+            required
+            margin="normal"
+          />
+          <Button
+            type="submit"
+            variant="contained"
+            fullWidth
+            sx={{ mt: 2, py: 1.5 }}
+            disabled={loading}
+          >
+            {loading ? <CircularProgress size={24} color="inherit" /> : "Login"}
+          </Button>
+        </Box>
+
+        <Typography variant="body2" align="center" sx={{ mt: 3 }}>
+          Don’t have an account?{" "}
+          <Link to="/register" style={{ textDecoration: "none" }}>
+            Register here
+          </Link>
+        </Typography>
+      </Paper>
+
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        message="Login successful!"
+      />
+    </Container>
+  );
+};
+
+export default Login;
+import axios from "../api/axios";
+
+export const refreshAccessToken = async () => {
+  try {
+    const response = await axios.get("/auth/refresh", {
+      withCredentials: true, // ensures HttpOnly cookies are sent
+    });
+
+    const { accessToken } = response.data;
+    if (accessToken) {
+      localStorage.setItem("accessToken", accessToken);
+      return accessToken;
+    } else {
+      throw new Error("No access token returned");
+    }
+  } catch (err) {
+    console.error("Failed to refresh token:", err.response?.data || err.message);
+    return null;
+  }
+};
+
+
+
+PORT=5000
+MONGO_URI=mongodb+srv://nickpacs123:1234@cluster0.zkynjb5.mongodb.net/personalrecordkeeper?retryWrites=true&w=majority&appName=Cluster0
+JWT_SECRET=your_jwt_secret
+JWT_REFRESH_SECRET=your_refresh_token_secret
+VERCEL_BLOB_READ_WRITE_TOKEN=vercel_blob_rw_nRY7bCWmNsqoFfp2_OYn6jeZScG8dKksAqlwHN3IyTF72CA
+CLIENT_URL=https://personal-record-keeper.vercel.app
+VITE_BLOB_UPLOAD_URL=https://nry7bcwmnsqoffp2.blob.vercel-storage.com/upload
+CLOUDINARY_CLOUD_NAME=daogfnehz
+CLOUDINARY_API_KEY=739318956796894
+CLOUDINARY_API_SECRET=w0H8mXPxNaaSMuGgkjQMdm_dBdA
+
+

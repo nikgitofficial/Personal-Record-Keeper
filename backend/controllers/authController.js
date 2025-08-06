@@ -15,6 +15,7 @@ export const register = async (req, res) => {
   res.status(201).json({ msg: "Registered successfully" });
 };
 
+
 export const login = async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email });
@@ -27,37 +28,23 @@ export const login = async (req, res) => {
   const accessToken = createAccessToken(payload);
   const refreshToken = createRefreshToken(payload);
 
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: true,
-    sameSite: "None",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
-
-  res.json({ accessToken });
+  // ✅ Return both tokens in body
+  res.json({ accessToken, refreshToken });
 };
 
 export const refresh = (req, res) => {
-  const token = req.cookies.refreshToken;
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ msg: "No refresh token provided" });
 
-  console.log("📦 Cookies received:", req.cookies);
-
-  if (!token) {
-    console.log("❌ No refreshToken found in cookies");
-    return res.sendStatus(401);
-  }
-
+  const token = authHeader.split(" ")[1];
   jwt.verify(token, process.env.JWT_REFRESH_SECRET, (err, user) => {
-    if (err) {
-      console.log("❌ Refresh token invalid:", err.message);
-      return res.sendStatus(403);
-    }
+    if (err) return res.status(403).json({ msg: "Invalid refresh token" });
 
     const newAccessToken = createAccessToken({ id: user.id, username: user.username });
-    console.log("✅ Refresh successful, new access token issued");
     res.json({ accessToken: newAccessToken });
   });
 };
+
 
 
 export const me = async (req, res) => {
@@ -74,6 +61,7 @@ export const me = async (req, res) => {
 
 export const logout = (req, res) => {
   res.clearCookie("refreshToken", {
+    path: "/",
     secure: true,
     sameSite: "None",
   });

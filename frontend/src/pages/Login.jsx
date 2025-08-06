@@ -30,8 +30,9 @@ const Login = () => {
         withCredentials: true,
       });
 
-      const accessToken = res.data.accessToken;
-      localStorage.setItem("accessToken", accessToken);
+        const { accessToken, refreshToken } = res.data;
+        localStorage.setItem("accessToken", accessToken);
+        localStorage.setItem("refreshToken", refreshToken);
 
       const me = await axios.get("/auth/me", {
         headers: { Authorization: `Bearer ${accessToken}` },

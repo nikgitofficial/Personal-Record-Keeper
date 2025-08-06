@@ -1,12 +1,9 @@
-// src/api/axios.js
 import axios from "axios";
 
 const instance = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
-  withCredentials: true, // allows sending refresh token cookie
 });
 
-// Automatically attach token to every request
 instance.interceptors.request.use((config) => {
   const token = localStorage.getItem("accessToken");
   if (token) {
@@ -15,7 +12,6 @@ instance.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle 401 Unauthorized and try refresh
 instance.interceptors.response.use(
   (res) => res,
   async (error) => {
@@ -25,15 +21,24 @@ instance.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const res = await instance.get("/auth/refresh"); // ✅ using instance here
-        const newToken = res.data.accessToken;
+        const refreshToken = localStorage.getItem("refreshToken");
+        const res = await axios.get(
+          `${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/auth/refresh`,
+          {
+            headers: {
+              Authorization: `Bearer ${refreshToken}`,
+            },
+          }
+        );
 
-        localStorage.setItem("accessToken", newToken);
-        originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
+        const newAccessToken = res.data.accessToken;
+        localStorage.setItem("accessToken", newAccessToken);
 
-        return instance(originalRequest);
+        originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
+        return axios(originalRequest);
       } catch (refreshError) {
-        localStorage.removeItem("accessToken"); // optional cleanup
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
         return Promise.reject(refreshError);
       }
     }

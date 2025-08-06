@@ -2,8 +2,13 @@ import axios from "../api/axios";
 
 export const refreshAccessToken = async () => {
   try {
+    const refreshToken = localStorage.getItem("refreshToken");
+    if (!refreshToken) throw new Error("No refresh token");
+
     const response = await axios.get("/auth/refresh", {
-      withCredentials: true, 
+      headers: {
+        Authorization: `Bearer ${refreshToken}`,
+      },
     });
 
     const { accessToken } = response.data;

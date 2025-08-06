@@ -27,25 +27,17 @@ export const login = async (req, res) => {
   const accessToken = createAccessToken(payload);
   const refreshToken = createRefreshToken(payload);
 
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: true,
-    sameSite: "None",
-    path: "/",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
-
-  res.json({ accessToken });
+  // ✅ Send both tokens in response (not cookies)
+  res.json({ accessToken, refreshToken });
 };
 
 export const refresh = (req, res) => {
-  const token = req.cookies.refreshToken;
-
-  console.log("📦 Cookies received:", req.cookies);
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(" ")[1];
 
   if (!token) {
-    console.log("❌ No refreshToken found in cookies");
-    return res.sendStatus(401);
+    console.log("❌ No refresh token in header");
+    return res.status(401).json({ msg: "No refresh token provided" });
   }
 
   jwt.verify(token, process.env.JWT_REFRESH_SECRET, (err, user) => {
@@ -55,11 +47,10 @@ export const refresh = (req, res) => {
     }
 
     const newAccessToken = createAccessToken({ id: user.id, username: user.username });
-    console.log("✅ Refresh successful, new access token issued");
+    console.log("✅ Refresh successful");
     res.json({ accessToken: newAccessToken });
   });
 };
-
 
 export const me = async (req, res) => {
   try {
@@ -74,12 +65,7 @@ export const me = async (req, res) => {
 };
 
 export const logout = (req, res) => {
-  res.clearCookie("refreshToken", {
-    path: "/",
-    secure: true,
-    sameSite: "None",
-  });
-  res.json({ msg: "Logged out" });
+  res.json({ msg: "Logged out" }); // No cookie to clear
 };
 
 export const updateUsername = async (req, res) => {

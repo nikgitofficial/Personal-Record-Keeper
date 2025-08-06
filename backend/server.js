@@ -26,7 +26,6 @@ const CLIENT_URLS = [
 // ✅ CORS configuration
 app.use(cors({
   origin: (origin, callback) => {
-    console.log("Incoming origin:", origin); // add this
     if (!origin || CLIENT_URLS.includes(origin)) {
       callback(null, true);
     } else {
@@ -35,7 +34,6 @@ app.use(cors({
   },
   credentials: true,
 }));
-
 // ✅ Middleware
 app.use(express.json());
 app.use(cookieParser());
@@ -46,18 +44,6 @@ app.use("/api/id-cards", idCardRoutes);
 app.use("/api/personal-details", personalDetailRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/files', fileRoutes);
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

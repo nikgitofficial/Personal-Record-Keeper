@@ -26,6 +26,7 @@ const CLIENT_URLS = [
 // ✅ CORS configuration
 app.use(cors({
   origin: (origin, callback) => {
+    console.log("Incoming origin:", origin); // add this
     if (!origin || CLIENT_URLS.includes(origin)) {
       callback(null, true);
     } else {
@@ -34,6 +35,7 @@ app.use(cors({
   },
   credentials: true,
 }));
+
 // ✅ Middleware
 app.use(express.json());
 app.use(cookieParser());

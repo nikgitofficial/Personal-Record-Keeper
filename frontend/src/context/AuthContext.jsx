@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect } from "react";
 import axios from "../api/axios"; // ✅ custom instance
+import CircularProgress from "@mui/material/CircularProgress"; // ✅ added
 
 export const AuthContext = createContext();
 
@@ -59,10 +60,29 @@ export const AuthProvider = ({ children }) => {
             justifyContent: "center",
             height: "100vh",
             fontFamily: "sans-serif",
+            backgroundColor: "#f5f5f5",
+            position: "relative",
           }}
         >
-          <p>Authenticating... {loadingPercent}%</p>
-          <progress value={loadingPercent} max="100" style={{ width: "200px" }} />
+          <div style={{ position: "relative", marginBottom: "16px" }}>
+            <CircularProgress size={100} thickness={5} />
+            <img
+              src="/favicon.ico" // ✅ logo in public folder
+              alt="Logo"
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                width: "50px",
+                height: "50px",
+                borderRadius: "50%",
+              }}
+            />
+          </div>
+          <p style={{ fontSize: "18px", color: "#555" }}>
+            Authenticating... {loadingPercent}%
+          </p>
         </div>
       ) : (
         children

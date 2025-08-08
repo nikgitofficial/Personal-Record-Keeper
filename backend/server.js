@@ -6,7 +6,7 @@ import mongoose from "mongoose";
 
 import authRoutes from "./routes/authRoutes.js";
 import idCardRoutes from "./routes/idCardRoutes.js";
-import personalDetailRoutes from "./routes/personalDetail.js";
+import personalDetailRoutes from "./routes/personalDetailRoutes.js";
 import profileRoutes from './routes/profileRoutes.js';
 import fileRoutes from './routes/fileRoutes.js';
 

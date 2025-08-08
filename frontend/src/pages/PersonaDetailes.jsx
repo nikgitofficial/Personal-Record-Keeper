@@ -1,267 +1,184 @@
+// frontend/src/pages/PersonalDetails.jsx
 import React, { useEffect, useState } from "react";
+import axios from "../api/axios"; // your configured axios instance
 import {
-  Box, Button, TextField, Typography, Table, TableBody, TableCell,
-  TableContainer, TableHead, TableRow, Paper, IconButton, Tooltip,
-  Snackbar, Dialog, DialogTitle, DialogContent, DialogActions, Alert,
-  TablePagination, CircularProgress, Grid, useMediaQuery
+  Box, Button, TextField, Typography,
+  List, ListItem, ListItemText, IconButton,
+  Dialog, DialogActions, DialogContent, DialogTitle,
+  CircularProgress, Snackbar,
 } from "@mui/material";
 import { Delete, Edit } from "@mui/icons-material";
-import { useTheme } from "@mui/material/styles";
-import axios from "../api/axios";
 
 const PersonalDetails = () => {
   const [details, setDetails] = useState([]);
-  const [form, setForm] = useState({ fullName: "", birthdate: "", address: "",occupation:"" });
-  const [editId, setEditId] = useState(null);
-  const [openSnackbar, setOpenSnackbar] = useState({ open: false, message: "", severity: "success" });
+  const [loading, setLoading] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
-  const [errors, setErrors] = useState({});
-  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
-  const [loadingSave, setLoadingSave] = useState(false);
-  const [loadingDelete, setLoadingDelete] = useState(false);
-
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-
-  const [page, setPage] = useState(0);
-  const rowsPerPage = 5;
+  const [form, setForm] = useState({ fullName: "", birthdate: "", address: "" });
+  const [editId, setEditId] = useState(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
   const fetchDetails = async () => {
-    const res = await axios.get("/personal-details");
-    setDetails(res.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+    setLoading(true);
+    try {
+      const res = await axios.get("/personal-details");
+      setDetails(res.data);
+    } catch (error) {
+      console.error(error);
+      showSnackbar("Failed to load personal details", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     fetchDetails();
   }, []);
 
-  const validateForm = () => {
-    const newErrors = {};
-    if (!form.fullName || form.fullName.length < 2) newErrors.fullName = "Full name is required.";
-    if (!form.birthdate || !/^\d{4}-\d{2}-\d{2}$/.test(form.birthdate)) newErrors.birthdate = "Valid birthdate required.";
-    if (!form.address || form.address.length < 3) newErrors.address = "Address is required.";
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const showSnackbar = (message, severity = "success") => {
+    setSnackbar({ open: true, message, severity });
   };
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleCloseSnackbar = () => {
+    setSnackbar({ open: false, message: "" });
   };
 
-  const handleDialogOpen = () => {
+  const handleOpenDialog = (detail = null) => {
+    if (detail) {
+      setForm({
+        fullName: detail.fullName,
+        birthdate: detail.birthdate.slice(0, 10),
+        address: detail.address,
+      });
+      setEditId(detail._id);
+    } else {
+      setForm({ fullName: "", birthdate: "", address: "" });
+      setEditId(null);
+    }
+    setOpenDialog(true);
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
     setForm({ fullName: "", birthdate: "", address: "" });
     setEditId(null);
-    setErrors({});
-    setOpenDialog(true);
   };
 
-  const handleEdit = (detail) => {
-    setForm({
-      fullName: detail.fullName,
-      birthdate: detail.birthdate,
-      address: detail.address
-    });
-    setEditId(detail._id);
-    setOpenDialog(true);
-  };
-
-  const handleDelete = async (id) => {
-    setLoadingDelete(true);
-    await axios.delete(`/personal-details/${id}`);
-    setOpenSnackbar({ open: true, message: "Deleted successfully", severity: "info" });
-    setLoadingDelete(false);
-    fetchDetails();
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-    setLoadingSave(true);
-
+  const handleSubmit = async () => {
+    const { fullName, birthdate, address } = form;
+    if (!fullName || !birthdate || !address) {
+      showSnackbar("Please fill all fields", "warning");
+      return;
+    }
     try {
       if (editId) {
         await axios.put(`/personal-details/${editId}`, form);
-        setOpenSnackbar({ open: true, message: "Updated successfully", severity: "success" });
+        showSnackbar("Personal detail updated successfully");
       } else {
         await axios.post("/personal-details", form);
-        setOpenSnackbar({ open: true, message: "Added successfully", severity: "success" });
+        showSnackbar("Personal detail added successfully");
       }
       fetchDetails();
-      setForm({ fullName: "", birthdate: "", address: "" });
-      setOpenDialog(false);
-      setEditId(null);
-    } catch {
-      setOpenSnackbar({ open: true, message: "Something went wrong", severity: "error" });
+      handleCloseDialog();
+    } catch (error) {
+      console.error(error);
+      showSnackbar("Failed to save personal detail", "error");
     }
-
-    setLoadingSave(false);
   };
 
-  const groupedDetails = details.reduce((acc, item) => {
-    const year = new Date(item.createdAt).getFullYear();
-    if (!acc[year]) acc[year] = [];
-    acc[year].push(item);
-    return acc;
-  }, {});
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this personal detail?")) return;
+    try {
+      await axios.delete(`/personal-details/${id}`);
+      showSnackbar("Personal detail deleted");
+      fetchDetails();
+    } catch (error) {
+      console.error(error);
+      showSnackbar("Failed to delete personal detail", "error");
+    }
+  };
 
   return (
-    <Box p={isMobile ? 2 : 4}>
-      <Typography variant="h5" fontWeight="bold" gutterBottom>
-        Personal Details
-      </Typography>
+    <Box sx={{ maxWidth: 600, margin: "auto", p: 2 }}>
+      <Typography variant="h4" mb={2}>Personal Details</Typography>
 
-      <Box display="flex" justifyContent="flex-end" mb={2}>
-        <Button variant="contained" onClick={handleDialogOpen}>
-          Add New Detail
-        </Button>
-      </Box>
+      <Button variant="contained" onClick={() => handleOpenDialog()} sx={{ mb: 2 }}>
+        Add Personal Detail
+      </Button>
 
-      <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
-        <Table stickyHeader>
-          <TableHead>
-            <TableRow sx={{ backgroundColor: isDark ? "grey.900" : "grey.100" }}>
-              <TableCell><strong>Full Name</strong></TableCell>
-              <TableCell><strong>Birthdate</strong></TableCell>
-              <TableCell><strong>Address</strong></TableCell>
-              <TableCell><strong>Age</strong></TableCell>
-              <TableCell align="center"><strong>Actions</strong></TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {Object.entries(groupedDetails).map(([year, items]) => (
-              <React.Fragment key={year}>
-                {items
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((detail, index) => (
-                    <TableRow
-                      key={detail._id}
-                      sx={{ backgroundColor: index % 2 === 0 ? "background.paper" : "action.hover" }}
-                    >
-                      <TableCell>{detail.fullName}</TableCell>
-                      <TableCell>{detail.birthdate}</TableCell>
-                      <TableCell>{detail.address}</TableCell>
-                      <TableCell>{detail.age}</TableCell>
-                      <TableCell align="center">
-                        <Tooltip title="Edit">
-                          <IconButton onClick={() => handleEdit(detail)}>
-                            <Edit />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Delete">
-                          <IconButton onClick={() => setConfirmDeleteId(detail._id)}>
-                            <Delete color="error" />
-                          </IconButton>
-                        </Tooltip>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-              </React.Fragment>
-            ))}
-          </TableBody>
-        </Table>
-        <TablePagination
-          component="div"
-          count={details.length}
-          page={page}
-          onPageChange={(_, newPage) => setPage(newPage)}
-          rowsPerPage={rowsPerPage}
-          rowsPerPageOptions={[]}
-        />
-      </TableContainer>
+      {loading ? (
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+          <CircularProgress />
+        </Box>
+      ) : details.length === 0 ? (
+        <Typography>No personal details found.</Typography>
+      ) : (
+        <List>
+          {details.map((detail) => (
+            <ListItem key={detail._id} secondaryAction={
+              <>
+                <IconButton edge="end" onClick={() => handleOpenDialog(detail)}><Edit /></IconButton>
+                <IconButton edge="end" onClick={() => handleDelete(detail._id)}><Delete /></IconButton>
+              </>
+            }>
+              <ListItemText
+                primary={detail.fullName}
+                secondary={
+                  <>
+                    <div>Birthdate: {new Date(detail.birthdate).toLocaleDateString()}</div>
+                    <div>Address: {detail.address}</div>
+                  </>
+                }
+              />
+            </ListItem>
+          ))}
+        </List>
+      )}
 
-      {/* Add/Edit Dialog */}
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} fullWidth maxWidth="sm">
-        <DialogTitle>{editId ? "Edit Detail" : "Add New Detail"}</DialogTitle>
-        <form onSubmit={handleSubmit}>
-          <DialogContent dividers>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField
-                  label="Full Name"
-                  name="fullName"
-                  value={form.fullName}
-                  onChange={handleChange}
-                  fullWidth
-                  error={!!errors.fullName}
-                  helperText={errors.fullName}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  label="Birthdate"
-                  name="birthdate"
-                  type="date"
-                  value={form.birthdate}
-                  onChange={handleChange}
-                  InputLabelProps={{ shrink: true }}
-                  fullWidth
-                  error={!!errors.birthdate}
-                  helperText={errors.birthdate}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  label="Address"
-                  name="address"
-                  value={form.address}
-                  onChange={handleChange}
-                  multiline
-                  rows={3}
-                  fullWidth
-                  error={!!errors.address}
-                  helperText={errors.address}
-                />
-              </Grid>
-            </Grid>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-            <Button
-              type="submit"
-              variant="contained"
-              disabled={loadingSave}
-              startIcon={loadingSave ? <CircularProgress size={20} color="inherit" /> : null}
-            >
-              {editId ? "Update" : "Save"}
-            </Button>
-          </DialogActions>
-        </form>
-      </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={!!confirmDeleteId} onClose={() => setConfirmDeleteId(null)}>
-        <DialogTitle>Confirm Deletion</DialogTitle>
+      {/* Dialog for Add/Edit */}
+      <Dialog open={openDialog} onClose={handleCloseDialog}>
+        <DialogTitle>{editId ? "Edit Personal Detail" : "Add Personal Detail"}</DialogTitle>
         <DialogContent>
-          <Typography>Are you sure you want to delete this detail?</Typography>
+          <TextField
+            margin="dense"
+            label="Full Name"
+            fullWidth
+            value={form.fullName}
+            onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+          />
+          <TextField
+            margin="dense"
+            label="Birthdate"
+            type="date"
+            fullWidth
+            InputLabelProps={{ shrink: true }}
+            value={form.birthdate}
+            onChange={(e) => setForm({ ...form, birthdate: e.target.value })}
+          />
+          <TextField
+            margin="dense"
+            label="Address"
+            fullWidth
+            multiline
+            rows={2}
+            value={form.address}
+            onChange={(e) => setForm({ ...form, address: e.target.value })}
+          />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirmDeleteId(null)}>Cancel</Button>
-          <Button
-            onClick={() => {
-              handleDelete(confirmDeleteId);
-              setConfirmDeleteId(null);
-            }}
-            color="error"
-            variant="contained"
-            startIcon={loadingDelete ? <CircularProgress size={20} color="inherit" /> : null}
-          >
-            Delete
+          <Button onClick={handleCloseDialog}>Cancel</Button>
+          <Button variant="contained" onClick={handleSubmit}>
+            {editId ? "Update" : "Add"}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Snackbar */}
       <Snackbar
-        open={openSnackbar.open}
-        autoHideDuration={3000}
-        onClose={() => setOpenSnackbar(prev => ({ ...prev, open: false }))}
+        open={snackbar.open}
+        onClose={handleCloseSnackbar}
+        autoHideDuration={4000}
+        message={snackbar.message}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      >
-        <Alert severity={openSnackbar.severity} sx={{ width: "100%" }}>
-          {openSnackbar.message}
-        </Alert>
-      </Snackbar>
+      />
     </Box>
   );
 };

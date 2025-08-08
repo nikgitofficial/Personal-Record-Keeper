@@ -1,48 +1,69 @@
+// backend/controllers/personalDetailController.js
 import PersonalDetail from "../models/PersonalDetail.js";
 
-// CREATE
+// Create new personal detail
 export const createPersonalDetail = async (req, res) => {
   try {
-    const { fullName, birthdate, address,age } = req.body;
-    const userId = req.userId;
+    const { fullName, birthdate, address } = req.body;
+    const userId = req.user.id;  // assuming user id is from authenticated token
 
-    if (!fullName || !birthdate || !address || !userId) {
-      return res.status(400).json({ message: "Missing fields" });
-    }
+    const newDetail = new PersonalDetail({ userId, fullName, birthdate, address });
+    await newDetail.save();
 
-    const detail = await PersonalDetail.create({ userId, fullName, birthdate, address });
-    res.status(201).json(detail);
+    res.status(201).json(newDetail);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: "Server error while creating personal detail." });
   }
 };
 
-// READ ALL
+// Get all personal details for logged-in user
 export const getPersonalDetails = async (req, res) => {
   try {
-    const details = await PersonalDetail.find({ userId: req.userId }).sort({ createdAt: -1 });
-    res.status(200).json(details);
+    const userId = req.user.id;
+    const details = await PersonalDetail.find({ userId }).sort({ createdAt: -1 });
+    res.json(details);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: "Server error while fetching personal details." });
   }
 };
 
-// UPDATE
+// Update personal detail by ID
 export const updatePersonalDetail = async (req, res) => {
   try {
-    const detail = await PersonalDetail.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.status(200).json(detail);
+    const { id } = req.params;
+    const { fullName, birthdate, address } = req.body;
+    const userId = req.user.id;
+
+    // Make sure the personal detail belongs to the user
+    const detail = await PersonalDetail.findOne({ _id: id, userId });
+    if (!detail) return res.status(404).json({ message: "Personal detail not found." });
+
+    detail.fullName = fullName || detail.fullName;
+    detail.birthdate = birthdate || detail.birthdate;
+    detail.address = address || detail.address;
+
+    await detail.save();
+    res.json(detail);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: "Server error while updating personal detail." });
   }
 };
 
-// DELETE
+// Delete personal detail by ID
 export const deletePersonalDetail = async (req, res) => {
   try {
-    await PersonalDetail.findByIdAndDelete(req.params.id);
-    res.status(200).json({ message: "Deleted successfully" });
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    const detail = await PersonalDetail.findOneAndDelete({ _id: id, userId });
+    if (!detail) return res.status(404).json({ message: "Personal detail not found." });
+
+    res.json({ message: "Personal detail deleted." });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: "Server error while deleting personal detail." });
   }
 };

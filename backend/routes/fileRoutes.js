@@ -8,29 +8,28 @@ import {
   downloadFile
   
 } from '../controllers/fileController.js';
-
-import  verifyToken  from '../middleware/verifyToken.js';
+import authenticate from "../middleware/authMiddleware.js";
 import { upload } from '../middleware/upload.js';
 
 const router = express.Router();
 
 // ✅ Upload file
-router.post('/upload', verifyToken, upload.single('file'), uploadFile);
+router.post('/upload', authenticate, upload.single('file'), uploadFile);
 
 // ✅ Download file — must be BEFORE '/:id'
-router.get('/download/:id',verifyToken, downloadFile); // ← Optional: remove verifyToken for public download
+router.get('/download/:id',authenticate, downloadFile); // ← Optional: remove verifyToken for public download
 
 // ✅ List user's files
-router.get('/', verifyToken, getUserFiles);
+router.get('/', authenticate, getUserFiles);
 
 // ✅ Get file by ID (for preview)
-router.get('/:id', verifyToken, getFileById);
+router.get('/:id', authenticate, getFileById);
 
 // ✅ Delete file
-router.delete('/:id', verifyToken, deleteFile);
+router.delete('/:id', authenticate, deleteFile);
 
 // ✅ Update filename
-router.put('/:id', verifyToken, updateFileName);
+router.put('/:id', authenticate, updateFileName);
 
 
 export default router;

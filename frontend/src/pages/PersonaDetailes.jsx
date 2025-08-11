@@ -51,6 +51,7 @@ const PersonalDetails = () => {
   const [detailToDelete, setDetailToDelete] = useState(null);
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [filterName, setFilterName] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchDetails();
@@ -120,20 +121,24 @@ const PersonalDetails = () => {
     setConfirmDialogOpen(true);
   };
 
-  const confirmDelete = async () => {
-    if (!detailToDelete) return;
+const confirmDelete = async () => {
+  if (!detailToDelete) return;
 
-    try {
-      await axios.delete(`/personal-details/${detailToDelete}`);
-      setSnackbar({ open: true, message: "Personal detail deleted", severity: "info" });
-      fetchDetails();
-    } catch (err) {
-      setSnackbar({ open: true, message: "Failed to delete personal detail", severity: "error" });
-    } finally {
-      setConfirmDialogOpen(false);
-      setDetailToDelete(null);
-    }
-  };
+  setDeleting(true);  // <-- start loading spinner here
+
+  try {
+    await axios.delete(`/personal-details/${detailToDelete}`);
+    setSnackbar({ open: true, message: "Personal detail deleted", severity: "info" });
+    fetchDetails();
+  } catch (err) {
+    setSnackbar({ open: true, message: "Failed to delete personal detail", severity: "error" });
+  } finally {
+    setDeleting(false);           // <-- stop loading spinner here
+    setConfirmDialogOpen(false);
+    setDetailToDelete(null);
+  }
+};
+
 
   const openAddModal = () => {
     setForm({ fullName: "", birthdate: "", address: "", phoneNumber: "", email: "" });
@@ -337,9 +342,10 @@ const PersonalDetails = () => {
           <Button onClick={() => setFormModalOpen(false)} disabled={buttonDisabled}>
             Cancel
           </Button>
-          <Button variant="contained" onClick={handleSave} disabled={buttonDisabled}>
-            {isEditing ? "Update Detail" : "Add Detail"}
-          </Button>
+         <Button variant="contained" onClick={handleSave} disabled={buttonDisabled}>
+  {buttonDisabled ? <CircularProgress size={20} color="inherit" /> : (isEditing ? "Update Detail" : "Add Detail")}
+</Button>
+
         </DialogActions>
       </Dialog>
 
@@ -353,9 +359,10 @@ const PersonalDetails = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setConfirmDialogOpen(false)}>Cancel</Button>
-          <Button color="error" onClick={confirmDelete}>
-            Delete
-          </Button>
+          <Button color="error" onClick={confirmDelete} disabled={deleting} variant="contained">
+  {deleting ? <CircularProgress size={20} color="inherit" /> : 'Delete'}
+</Button>
+
         </DialogActions>
       </Dialog>
 

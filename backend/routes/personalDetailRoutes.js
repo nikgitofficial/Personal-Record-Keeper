@@ -1,5 +1,5 @@
 import express from "express";
-import verifyToken from "../middleware/verifyToken.js";
+import authenticate from "../middleware/authMiddleware.js";
 import {
   addPersonalDetail,
   getPersonalDetails,
@@ -9,9 +9,9 @@ import {
 
 const router = express.Router();
 
-router.post("/", verifyToken, addPersonalDetail);
-router.get("/", verifyToken, getPersonalDetails);
-router.delete("/:id", verifyToken, deletePersonalDetail);
-router.put("/:id", verifyToken, updatePersonalDetail);
+router.post("/", authenticate, addPersonalDetail);
+router.get("/", authenticate, getPersonalDetails);
+router.delete("/:id", authenticate, deletePersonalDetail);
+router.put("/:id", authenticate, updatePersonalDetail);
 
 export default router;

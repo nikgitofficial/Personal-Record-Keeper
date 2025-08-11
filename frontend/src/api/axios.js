@@ -17,11 +17,13 @@ instance.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
         const refreshToken = localStorage.getItem("refreshToken");
+        if (!refreshToken) throw new Error("No refresh token found");
+
         const res = await axios.get(
           `${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/auth/refresh`,
           {
@@ -39,6 +41,7 @@ instance.interceptors.response.use(
       } catch (refreshError) {
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
+        // Optionally redirect to login here
         return Promise.reject(refreshError);
       }
     }

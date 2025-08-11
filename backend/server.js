@@ -21,6 +21,7 @@ const CLIENT_URLS = [
   process.env.CLIENT_URL || "http://localhost:5173",
   "http://localhost:5173", // local dev
   "https://personal-record-keeper.vercel.app", // deployed frontend
+  "https://personal-record-keeper-lgiuv03zw-nikkos-projects-06c8e312.vercel.app",
 ];
 
 // ✅ CORS configuration

@@ -27,7 +27,7 @@ export const login = async (req, res) => {
   const accessToken = createAccessToken(payload);
   const refreshToken = createRefreshToken(payload);
 
-  // ✅ Send both tokens in response (not cookies)
+  // Send tokens in response body (not cookies)
   res.json({ accessToken, refreshToken });
 };
 
@@ -43,7 +43,7 @@ export const refresh = (req, res) => {
   jwt.verify(token, process.env.JWT_REFRESH_SECRET, (err, user) => {
     if (err) {
       console.log("❌ Refresh token invalid:", err.message);
-      return res.sendStatus(403);
+      return res.status(403).json({ msg: "Invalid refresh token" });
     }
 
     const newAccessToken = createAccessToken({ id: user.id, username: user.username });
@@ -65,7 +65,7 @@ export const me = async (req, res) => {
 };
 
 export const logout = (req, res) => {
-  res.json({ msg: "Logged out" }); // No cookie to clear
+  res.json({ msg: "Logged out" }); // No cookies to clear
 };
 
 export const updateUsername = async (req, res) => {

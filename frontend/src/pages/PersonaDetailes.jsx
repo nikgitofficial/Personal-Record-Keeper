@@ -5,9 +5,6 @@ import {
   TextField,
   Button,
   Grid,
-  Card,
-  CardHeader,
-  CardContent,
   Box,
   IconButton,
   Paper,
@@ -19,13 +16,23 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Tooltip,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { Tooltip } from "@mui/material";
 import { AuthContext } from "../context/AuthContext";
 
 const PersonalDetails = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const { currentUser } = useContext(AuthContext);
   const [details, setDetails] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -42,6 +49,8 @@ const PersonalDetails = () => {
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [detailToDelete, setDetailToDelete] = useState(null);
+  const [formModalOpen, setFormModalOpen] = useState(false);
+  const [filterName, setFilterName] = useState("");
 
   useEffect(() => {
     fetchDetails();
@@ -84,6 +93,7 @@ const PersonalDetails = () => {
       setForm({ fullName: "", birthdate: "", address: "", phoneNumber: "", email: "" });
       setIsEditing(false);
       setEditId(null);
+      setFormModalOpen(false);
       fetchDetails();
     } catch (err) {
       setSnackbar({ open: true, message: "Failed to save personal detail", severity: "error" });
@@ -102,9 +112,10 @@ const PersonalDetails = () => {
     });
     setIsEditing(true);
     setEditId(detail._id);
+    setFormModalOpen(true);
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = (id) => {
     setDetailToDelete(id);
     setConfirmDialogOpen(true);
   };
@@ -124,83 +135,37 @@ const PersonalDetails = () => {
     }
   };
 
+  const openAddModal = () => {
+    setForm({ fullName: "", birthdate: "", address: "", phoneNumber: "", email: "" });
+    setIsEditing(false);
+    setEditId(null);
+    setFormModalOpen(true);
+  };
+
+  const filteredDetails = details.filter((d) =>
+    d.fullName.toLowerCase().includes(filterName.toLowerCase())
+  );
+
   return (
-    <Box p={2}>
-      <Paper sx={{ p: 3, mb: 4 }}>
-        <Typography variant="h5" fontWeight={600} gutterBottom>
-          {isEditing ? "Edit Personal Detail" : "Add Personal Detail"}
-        </Typography>
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              label="Full Name"
-              name="fullName"
-              value={form.fullName}
-              onChange={handleChange}
-              fullWidth
-              required
-            />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <TextField
-              label="Birthdate"
-              name="birthdate"
-              type="date"
-              value={form.birthdate}
-              onChange={handleChange}
-              InputLabelProps={{ shrink: true }}
-              fullWidth
-              required
-            />
-          </Grid>
-
-          <Grid item xs={12}>
-            <TextField
-              label="Address"
-              name="address"
-              value={form.address}
-              onChange={handleChange}
-              fullWidth
-              multiline
-              rows={2}
-              required
-            />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <TextField
-              label="Phone Number"
-              name="phoneNumber"
-              value={form.phoneNumber}
-              onChange={handleChange}
-              fullWidth
-            />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <TextField
-              label="Email"
-              name="email"
-              type="email"
-              value={form.email}
-              onChange={handleChange}
-              fullWidth
-            />
-          </Grid>
-
-          <Grid item xs={12}>
-            <Button
-              variant="contained"
-              onClick={handleSave}
-              disabled={buttonDisabled}
-              fullWidth
-            >
-              {isEditing ? "Update Detail" : "Add Detail"}
-            </Button>
-          </Grid>
-        </Grid>
-      </Paper>
+    <Box p={2} maxWidth="100%">
+      <Box
+        mb={2}
+        display="flex"
+        justifyContent="space-between"
+        flexWrap="wrap"
+        gap={2}
+      >
+        <TextField
+          label="Search by Full Name"
+          value={filterName}
+          onChange={(e) => setFilterName(e.target.value)}
+          size="small"
+          sx={{ minWidth: 240, flexGrow: 1, maxWidth: isMobile ? "100%" : 300 }}
+        />
+        <Button variant="contained" onClick={openAddModal} sx={{ whiteSpace: "nowrap" }}>
+          Add Personal Detail
+        </Button>
+      </Box>
 
       <Typography variant="h6" fontWeight={600} gutterBottom>
         Saved Personal Details
@@ -211,25 +176,72 @@ const PersonalDetails = () => {
           <CircularProgress />
         </Box>
       ) : (
-        <Grid container spacing={2}>
-          {details.map((detail) => (
-            <Grid item xs={12} sm={6} md={4} key={detail._id}>
-              <Card
-                sx={{
-                  borderLeft: "5px solid #4caf50",
-                  height: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "space-between",
-                }}
-              >
-                <CardHeader
-                  title={detail.fullName}
-                  subheader={`Birthdate: ${detail.birthdate}`}
-                  action={
-                    <>
+        <TableContainer
+  component={Paper}
+  sx={{
+    maxHeight: isMobile ? 240 : 300,
+    overflowX: "auto",
+    borderRadius: 2,
+    boxShadow: theme.shadows[3],
+  }}
+>
+
+          <Table
+            stickyHeader
+            aria-label="personal details table"
+            size="small"
+            sx={{
+              minWidth: 650,
+              "& .MuiTableRow-root": {
+                transition: "background-color 0.3s",
+                cursor: "default",
+              },
+              "& .MuiTableRow-root:hover": {
+                backgroundColor:
+                  theme.palette.mode === "dark"
+                    ? "rgba(255, 255, 255, 0.1)"
+                    : "rgba(0, 0, 0, 0.04)",
+              },
+              "& .MuiTableCell-root": {
+                transition: "color 0.3s",
+              },
+            }}
+          >
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontWeight: "bold" }}>Full Name</TableCell>
+                <TableCell sx={{ fontWeight: "bold" }}>Birthdate</TableCell>
+                <TableCell sx={{ fontWeight: "bold" }}>Address</TableCell>
+                <TableCell sx={{ fontWeight: "bold" }}>Phone Number</TableCell>
+                <TableCell sx={{ fontWeight: "bold" }}>Email</TableCell>
+                <TableCell align="right" sx={{ fontWeight: "bold" }}>
+                  Actions
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredDetails.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center">
+                    No personal details found.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredDetails.map((detail) => (
+                  <TableRow key={detail._id} tabIndex={-1}>
+                    <TableCell>{detail.fullName}</TableCell>
+                    <TableCell>{detail.birthdate}</TableCell>
+                    <TableCell>{detail.address}</TableCell>
+                    <TableCell>{detail.phoneNumber || "-"}</TableCell>
+                    <TableCell>{detail.email || "-"}</TableCell>
+                    <TableCell align="right">
                       <Tooltip title="Edit">
-                        <IconButton onClick={() => handleEdit(detail)} color="primary">
+                        <IconButton
+                          onClick={() => handleEdit(detail)}
+                          color="primary"
+                          size="small"
+                          sx={{ cursor: "pointer" }}
+                        >
                           <EditIcon />
                         </IconButton>
                       </Tooltip>
@@ -237,33 +249,99 @@ const PersonalDetails = () => {
                         <IconButton
                           onClick={() => handleDelete(detail._id)}
                           color="error"
+                          size="small"
+                          sx={{ cursor: "pointer" }}
                         >
                           <DeleteIcon />
                         </IconButton>
                       </Tooltip>
-                    </>
-                  }
-                />
-                <CardContent>
-                  <Typography variant="body2" color="text.secondary">
-                    Address: {detail.address}
-                  </Typography>
-                  {detail.phoneNumber && (
-                    <Typography variant="body2" color="text.secondary">
-                      Phone: {detail.phoneNumber}
-                    </Typography>
-                  )}
-                  {detail.email && (
-                    <Typography variant="body2" color="text.secondary">
-                      Email: {detail.email}
-                    </Typography>
-                  )}
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
+
+      {/* Form Modal */}
+      <Dialog
+        open={formModalOpen}
+        onClose={() => setFormModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>{isEditing ? "Edit Personal Detail" : "Add Personal Detail"}</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 0.5 }}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Full Name"
+                name="fullName"
+                value={form.fullName}
+                onChange={handleChange}
+                fullWidth
+                required
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Birthdate"
+                name="birthdate"
+                type="date"
+                value={form.birthdate}
+                onChange={handleChange}
+                InputLabelProps={{ shrink: true }}
+                fullWidth
+                required
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <TextField
+                label="Address"
+                name="address"
+                value={form.address}
+                onChange={handleChange}
+                fullWidth
+                multiline
+                rows={2}
+                required
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Phone Number"
+                name="phoneNumber"
+                value={form.phoneNumber}
+                onChange={handleChange}
+                fullWidth
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Email"
+                name="email"
+                type="email"
+                value={form.email}
+                onChange={handleChange}
+                fullWidth
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setFormModalOpen(false)} disabled={buttonDisabled}>
+            Cancel
+          </Button>
+          <Button variant="contained" onClick={handleSave} disabled={buttonDisabled}>
+            {isEditing ? "Update Detail" : "Add Detail"}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Confirm Delete Dialog */}
       <Dialog open={confirmDialogOpen} onClose={() => setConfirmDialogOpen(false)}>

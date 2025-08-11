@@ -20,36 +20,45 @@ const Login = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError("");
+  setLoading(true);
 
-    try {
-      const res = await axios.post("/auth/login", form, {
-        withCredentials: true,
-      });
+  try {
+    const res = await axios.post("/auth/login", form, {
+      withCredentials: true,
+    });
 
-      const accessToken = res.data.accessToken;
-      localStorage.setItem("accessToken", accessToken);
+    const { accessToken, refreshToken } = res.data;
+    localStorage.setItem("accessToken", accessToken);
+    localStorage.setItem("refreshToken", refreshToken); // <-- Save refresh token!
 
-      const me = await axios.get("/auth/me", {
-        headers: { Authorization: `Bearer ${accessToken}` },
-        withCredentials: true,
-      });
+    const me = await axios.get("/auth/me", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      withCredentials: true,
+    });
 
-      setUser(me.data);
-      setSnackbarOpen(true); // Show success snackbar
+    setUser(me.data);
+    localStorage.setItem("user", JSON.stringify(me.data)); // <-- Save user data too
 
-      setTimeout(() => {
-        navigate("/"); // Navigate after brief delay
-      }, 1000);
-    } catch (err) {
-      setError(err.response?.data?.msg || "Login failed");
-    } finally {
-      setLoading(false);
-    }
-  };
+    setSnackbarOpen(true); // Show success snackbar
+
+    setTimeout(() => {
+      navigate("/"); // Navigate after brief delay
+    }, 1000);
+  } catch (err) {
+    setError(err.response?.data?.msg || "Login failed");
+
+    // Clean up tokens on failure
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("user");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <Container maxWidth="sm">

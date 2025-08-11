@@ -4,17 +4,12 @@ import {
   Typography,
   TextField,
   Button,
-  Grid,
-  Card,
-  CardHeader,
-  CardContent,
   Box,
   Select,
   MenuItem,
   FormControl,
   InputLabel,
   IconButton,
-  Paper,
   Snackbar,
   Alert,
   CircularProgress,
@@ -26,6 +21,14 @@ import {
   useMediaQuery,
   useTheme,
   Tooltip,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Grid,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -35,7 +38,10 @@ const Settings = () => {
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
+  const isDarkMode = theme.palette.mode === "dark";
+
   const { currentUser } = useContext(AuthContext);
+
   const [cardForm, setCardForm] = useState({
     name: "",
     number: "",
@@ -45,15 +51,24 @@ const Settings = () => {
     customName: "",
   });
   const [showCustomNameInput, setShowCustomNameInput] = useState(false);
+
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // Filter state
+  const [filterText, setFilterText] = useState("");
+
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [cardToDelete, setCardToDelete] = useState(null);
+
   const [isEditing, setIsEditing] = useState(false);
   const [editCardId, setEditCardId] = useState(null);
+
   const [buttonDisabled, setButtonDisabled] = useState(false);
   const [deletingCardId, setDeletingCardId] = useState(null);
+
   const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
@@ -79,6 +94,9 @@ const Settings = () => {
     setCardForm((prev) => ({ ...prev, [name]: value }));
     if (name === "name") {
       setShowCustomNameInput(value === "Others");
+      if (value !== "Others") {
+        setCardForm((prev) => ({ ...prev, customName: "" }));
+      }
     }
   };
 
@@ -175,92 +193,182 @@ const Settings = () => {
     }
   };
 
+  // Filter cards based on filterText (case-insensitive)
+  const filteredCards = cards.filter((card) => {
+    const search = filterText.toLowerCase();
+    return (
+      card.cardName.toLowerCase().includes(search) ||
+      card.cardNumber.toLowerCase().includes(search) ||
+      card.fullName.toLowerCase().includes(search) ||
+      card.address.toLowerCase().includes(search)
+    );
+  });
+
   return (
-    <Box p={2} maxWidth="md" mx="auto">
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h5" fontWeight={600}>
+    <Box
+      p={{ xs: 2, sm: 4 }}
+      maxWidth="md"
+      mx="auto"
+      sx={{
+        color: isDarkMode ? theme.palette.text.primary : theme.palette.text.primary,
+      }}
+    >
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} flexWrap="wrap" gap={2}>
+        <Typography variant="h4" fontWeight={700} flexGrow={1}>
           Government ID Cards
         </Typography>
-        <Button variant="contained" onClick={handleOpenModalForAdd}>
+        <Button variant="contained" size="large" onClick={handleOpenModalForAdd}>
           Add New ID Card
         </Button>
       </Box>
 
+      <TextField
+        label="Search by ID Type, Number, Name, or Address"
+        variant="outlined"
+        fullWidth
+        size="medium"
+        value={filterText}
+        onChange={(e) => setFilterText(e.target.value)}
+        sx={{
+          mb: 2,
+          bgcolor: isDarkMode ? theme.palette.background.default : "inherit",
+          input: {
+            color: theme.palette.text.primary,
+          },
+          "& .MuiOutlinedInput-root": {
+            "& fieldset": {
+              borderColor: isDarkMode ? theme.palette.divider : undefined,
+            },
+            "&:hover fieldset": {
+              borderColor: isDarkMode ? theme.palette.primary.light : undefined,
+            },
+          },
+        }}
+      />
+
       {loading ? (
         <Box display="flex" justifyContent="center" my={6}>
-          <CircularProgress />
+          <CircularProgress size={48} />
         </Box>
-      ) : cards.length === 0 ? (
-        <Typography>No saved cards yet.</Typography>
+      ) : filteredCards.length === 0 ? (
+        <Typography variant="body1" textAlign="center" color="text.secondary" mt={6}>
+          No matching cards found.
+        </Typography>
       ) : (
-        <Grid container spacing={2}>
-          {cards.map((card) => (
-            <Grid item xs={12} sm={6} md={4} key={card._id}>
-              <Card
-                sx={{
-                  borderLeft: "5px solid #1976d2",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "space-between",
-                  height: "100%",
-                }}
-              >
-                <CardHeader
-                  title={card.cardName}
-                  action={
-                    <>
-                      <Tooltip title="Edit Card">
-                        <IconButton onClick={() => handleOpenModalForEdit(card)} color="primary">
-                          <EditIcon />
+        <TableContainer
+          component={Paper}
+          elevation={4}
+          sx={{
+            maxHeight: 440,
+            overflowY: "auto",
+            bgcolor: isDarkMode ? theme.palette.background.paper : "white",
+          }}
+        >
+          <Table stickyHeader aria-label="government id cards table" size="medium">
+            <TableHead
+              sx={{
+                bgcolor: isDarkMode ? theme.palette.primary.dark : theme.palette.primary.light,
+              }}
+            >
+              <TableRow>
+                {["ID Type", "Card Number", "Full Name", "Birthdate", "Address", "Actions"].map(
+                  (header, index) => (
+                    <TableCell
+                      key={header}
+                      sx={{
+                        fontWeight: "bold",
+                        color: theme.palette.primary.contrastText,
+                        minWidth: index === 5 ? 120 : "auto",
+                      }}
+                      align={header === "Actions" ? "center" : "left"}
+                    >
+                      {header}
+                    </TableCell>
+                  )
+                )}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredCards.map((card) => (
+                <TableRow
+                  key={card._id}
+                  hover
+                  sx={{
+                    cursor: "default",
+                    bgcolor: isDarkMode ? theme.palette.background.default : "inherit",
+                  }}
+                  tabIndex={-1}
+                  role="checkbox"
+                >
+                  <TableCell sx={{ color: theme.palette.text.primary }}>{card.cardName}</TableCell>
+                  <TableCell sx={{ color: theme.palette.text.primary }}>{card.cardNumber}</TableCell>
+                  <TableCell sx={{ color: theme.palette.text.primary }}>{card.fullName}</TableCell>
+                  <TableCell sx={{ color: theme.palette.text.primary }}>{card.birthdate}</TableCell>
+                  <TableCell sx={{ color: theme.palette.text.primary }}>{card.address}</TableCell>
+                  <TableCell align="center" sx={{ whiteSpace: "nowrap" }}>
+                    <Tooltip title="Edit Card">
+                      <IconButton
+                        onClick={() => handleOpenModalForEdit(card)}
+                        color="primary"
+                        size="medium"
+                        aria-label={`Edit card ${card.cardName}`}
+                      >
+                        <EditIcon />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Delete Card">
+                      <span>
+                        <IconButton
+                          onClick={() => {
+                            setCardToDelete(card._id);
+                            setConfirmDialogOpen(true);
+                          }}
+                          color="error"
+                          size="medium"
+                          disabled={deletingCardId === card._id}
+                          aria-label={`Delete card ${card.cardName}`}
+                        >
+                          <DeleteIcon />
                         </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Delete Card">
-                        <span>
-                          <IconButton
-                            onClick={() => {
-                              setCardToDelete(card._id);
-                              setConfirmDialogOpen(true);
-                            }}
-                            color="error"
-                            disabled={deletingCardId === card._id}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </span>
-                      </Tooltip>
-                    </>
-                  }
-                />
-                <CardContent>
-                  <Typography variant="body2" color="text.secondary">
-                    Card Number: <strong>{card.cardNumber}</strong>
-                  </Typography>
-                  <Typography variant="body2">Name: {card.fullName}</Typography>
-                  <Typography variant="body2">Birthdate: {card.birthdate}</Typography>
-                  <Typography variant="body2">Address: {card.address}</Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+                      </span>
+                    </Tooltip>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
 
       {/* Confirm Delete Dialog */}
-      <Dialog open={confirmDialogOpen} onClose={() => setConfirmDialogOpen(false)}>
-        <DialogTitle>Confirm Deletion</DialogTitle>
+      <Dialog
+        open={confirmDialogOpen}
+        onClose={() => setConfirmDialogOpen(false)}
+        aria-labelledby="confirm-delete-dialog-title"
+        fullWidth
+        maxWidth="xs"
+        fullScreen={fullScreen}
+      >
+        <DialogTitle id="confirm-delete-dialog-title" fontWeight={700}>
+          Confirm Deletion
+        </DialogTitle>
         <DialogContent>
           <DialogContentText>
             Are you sure you want to delete this ID card? This action cannot be undone.
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirmDialogOpen(false)}>Cancel</Button>
+          <Button onClick={() => setConfirmDialogOpen(false)} variant="outlined" size="large">
+            Cancel
+          </Button>
           <Button
             color="error"
             variant="contained"
             onClick={() => handleDeleteCard(cardToDelete)}
+            size="large"
+            disabled={deletingCardId !== null}
           >
-            Delete
+            {deletingCardId !== null ? "Deleting..." : "Delete"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -273,10 +381,13 @@ const Settings = () => {
         maxWidth="sm"
         fullScreen={fullScreen}
         scroll="paper"
+        aria-labelledby="add-edit-card-dialog-title"
       >
-        <DialogTitle>{isEditing ? "Edit ID Card" : "Add New ID Card"}</DialogTitle>
+        <DialogTitle id="add-edit-card-dialog-title" fontWeight={700}>
+          {isEditing ? "Edit ID Card" : "Add New ID Card"}
+        </DialogTitle>
         <DialogContent dividers>
-          <Grid container spacing={2} mt={0.5}>
+          <Grid container spacing={3} mt={0.5}>
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth>
                 <InputLabel id="modal-card-name-label">ID Type</InputLabel>
@@ -287,6 +398,7 @@ const Settings = () => {
                   label="ID Type"
                   onChange={handleChange}
                   autoFocus={!isEditing}
+                  size="medium"
                 >
                   <MenuItem value="PhilHealth">PhilHealth</MenuItem>
                   <MenuItem value="SSS">SSS</MenuItem>
@@ -308,6 +420,11 @@ const Settings = () => {
                   name="customName"
                   value={cardForm.customName}
                   onChange={handleChange}
+                  size="medium"
+                  sx={{
+                    input: { color: theme.palette.text.primary },
+                    bgcolor: isDarkMode ? theme.palette.background.default : "inherit",
+                  }}
                 />
               </Grid>
             )}
@@ -319,6 +436,11 @@ const Settings = () => {
                 name="number"
                 value={cardForm.number}
                 onChange={handleChange}
+                size="medium"
+                sx={{
+                  input: { color: theme.palette.text.primary },
+                  bgcolor: isDarkMode ? theme.palette.background.default : "inherit",
+                }}
               />
             </Grid>
 
@@ -329,6 +451,11 @@ const Settings = () => {
                 name="fullname"
                 value={cardForm.fullname}
                 onChange={handleChange}
+                size="medium"
+                sx={{
+                  input: { color: theme.palette.text.primary },
+                  bgcolor: isDarkMode ? theme.palette.background.default : "inherit",
+                }}
               />
             </Grid>
 
@@ -341,6 +468,11 @@ const Settings = () => {
                 value={cardForm.birthdate}
                 onChange={handleChange}
                 InputLabelProps={{ shrink: true }}
+                size="medium"
+                sx={{
+                  input: { color: theme.palette.text.primary },
+                  bgcolor: isDarkMode ? theme.palette.background.default : "inherit",
+                }}
               />
             </Grid>
 
@@ -353,18 +485,26 @@ const Settings = () => {
                 onChange={handleChange}
                 multiline
                 rows={2}
+                size="medium"
+                sx={{
+                  input: { color: theme.palette.text.primary },
+                  bgcolor: isDarkMode ? theme.palette.background.default : "inherit",
+                }}
               />
             </Grid>
           </Grid>
         </DialogContent>
 
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={handleCloseModal}>Cancel</Button>
+          <Button onClick={handleCloseModal} size="large" variant="outlined">
+            Cancel
+          </Button>
           <Button
             variant="contained"
             onClick={handleSaveCard}
             disabled={buttonDisabled}
-            sx={{ minWidth: 120 }}
+            size="large"
+            sx={{ minWidth: 140 }}
           >
             {isEditing ? "Save Changes" : "Add Card"}
           </Button>

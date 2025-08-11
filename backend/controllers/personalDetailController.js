@@ -1,69 +1,76 @@
-// backend/controllers/personalDetailController.js
 import PersonalDetail from "../models/PersonalDetail.js";
 
-// Create new personal detail
-export const createPersonalDetail = async (req, res) => {
+export const addPersonalDetail = async (req, res) => {
+  const { fullName, birthdate, address, phoneNumber, email } = req.body;
+  const userId = req.userId;
+
+  if (!fullName || !birthdate || !address) {
+    return res.status(400).json({ message: "Full name, birthdate, and address are required" });
+  }
+
   try {
-    const { fullName, birthdate, address } = req.body;
-    const userId = req.user.id;  // assuming user id is from authenticated token
-
-    const newDetail = new PersonalDetail({ userId, fullName, birthdate, address });
-    await newDetail.save();
-
+    const newDetail = await PersonalDetail.create({
+      userId,
+      fullName,
+      birthdate,
+      address,
+      phoneNumber,
+      email,
+    });
     res.status(201).json(newDetail);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error while creating personal detail." });
+    res.status(500).json({ message: "Failed to add personal detail", error: error.message });
   }
 };
 
-// Get all personal details for logged-in user
 export const getPersonalDetails = async (req, res) => {
+  const userId = req.userId;
+
   try {
-    const userId = req.user.id;
-    const details = await PersonalDetail.find({ userId }).sort({ createdAt: -1 });
-    res.json(details);
+    const details = await PersonalDetail.find({ userId });
+    res.status(200).json(details);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error while fetching personal details." });
+    res.status(500).json({ message: "Failed to retrieve personal details", error: error.message });
   }
 };
 
-// Update personal detail by ID
-export const updatePersonalDetail = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { fullName, birthdate, address } = req.body;
-    const userId = req.user.id;
-
-    // Make sure the personal detail belongs to the user
-    const detail = await PersonalDetail.findOne({ _id: id, userId });
-    if (!detail) return res.status(404).json({ message: "Personal detail not found." });
-
-    detail.fullName = fullName || detail.fullName;
-    detail.birthdate = birthdate || detail.birthdate;
-    detail.address = address || detail.address;
-
-    await detail.save();
-    res.json(detail);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error while updating personal detail." });
-  }
-};
-
-// Delete personal detail by ID
 export const deletePersonalDetail = async (req, res) => {
+  const { id } = req.params;
+  const userId = req.userId;
+
   try {
-    const { id } = req.params;
-    const userId = req.user.id;
-
     const detail = await PersonalDetail.findOneAndDelete({ _id: id, userId });
-    if (!detail) return res.status(404).json({ message: "Personal detail not found." });
-
-    res.json({ message: "Personal detail deleted." });
+    if (!detail) {
+      return res.status(404).json({ message: "Personal detail not found or unauthorized" });
+    }
+    res.status(200).json({ message: "Personal detail deleted successfully" });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error while deleting personal detail." });
+    res.status(500).json({ message: "Failed to delete personal detail", error: error.message });
+  }
+};
+
+export const updatePersonalDetail = async (req, res) => {
+  const { id } = req.params;
+  const userId = req.userId;
+  const { fullName, birthdate, address, phoneNumber, email } = req.body;
+
+  if (!fullName || !birthdate || !address) {
+    return res.status(400).json({ message: "Full name, birthdate, and address are required" });
+  }
+
+  try {
+    const updatedDetail = await PersonalDetail.findOneAndUpdate(
+      { _id: id, userId },
+      { fullName, birthdate, address, phoneNumber, email },
+      { new: true }
+    );
+
+    if (!updatedDetail) {
+      return res.status(404).json({ message: "Personal detail not found or unauthorized" });
+    }
+
+    res.status(200).json(updatedDetail);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to update personal detail", error: error.message });
   }
 };

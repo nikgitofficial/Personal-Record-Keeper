@@ -25,7 +25,7 @@ const sendEmail = async (to, subject, otp) => {
   `;
 
   await transporter.sendMail({
-    from: `"NikTech Support" <${process.env.OTP_EMAIL}>`,
+    from: `"Nikko MP. Support" <${process.env.OTP_EMAIL}>`,
     to,
     subject,
     html: htmlContent,

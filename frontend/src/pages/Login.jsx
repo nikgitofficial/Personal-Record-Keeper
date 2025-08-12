@@ -103,6 +103,15 @@ const handleSubmit = async (e) => {
           >
             {loading ? <CircularProgress size={24} color="inherit" /> : "Login"}
           </Button>
+          <Typography
+  variant="body2"
+  align="right"
+  sx={{ mt: 1, cursor: "pointer" }}
+>
+  <Link to="/forgot-password" style={{ textDecoration: "none" }}>
+    Forgot Password?
+  </Link>
+</Typography>
         </Box>
 
         <Typography variant="body2" align="center" sx={{ mt: 3 }}>
@@ -120,6 +129,7 @@ const handleSubmit = async (e) => {
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
         message="Login successful!"
       />
+      
     </Container>
   );
 };

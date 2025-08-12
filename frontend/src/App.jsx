@@ -10,6 +10,7 @@ import PersonalDetailes from "./pages/PersonaDetailes";
 import UserFileUploader from "./pages/UserFileUploader";
 import About from "./pages/About";
 import Preview from './pages/Preview';
+import ForgotPassword from './pages/ForgotPassword';
 
 
 const App = () => {
@@ -27,6 +28,7 @@ const App = () => {
          <Route path="/about" element={<Dashboard><About /></Dashboard>} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
       </Routes>
     </BrowserRouter>
   );

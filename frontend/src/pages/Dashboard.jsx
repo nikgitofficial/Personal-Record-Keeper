@@ -22,7 +22,8 @@ import {
   Collapse,
   CircularProgress,
   Tooltip,
-  Stack
+  Stack,
+  useMediaQuery,
 } from "@mui/material";
 import DialogContent from "@mui/material/DialogContent";
 import CloseIcon from "@mui/icons-material/Close";
@@ -34,18 +35,15 @@ import {
   Home as HomeIcon,
   AccountCircle as AccountCircleIcon,
   Settings as SettingsIcon,
-  AdminPanelSettings as AdminPanelSettingsIcon,
-  Insights as InsightsIcon,
-  Brightness4 as Brightness4Icon,
-  Brightness7 as Brightness7Icon,
   ExpandLess,
   ExpandMore,
+  Brightness4 as Brightness4Icon,
+  Brightness7 as Brightness7Icon,
 } from "@mui/icons-material";
 import EmailIcon from "@mui/icons-material/Email";
 import GitHubIcon from "@mui/icons-material/GitHub";
 import InfoIcon from "@mui/icons-material/Info";
 import LanguageIcon from "@mui/icons-material/Language";
-
 import { InsertDriveFile as InsertDriveFileIcon } from "@mui/icons-material";
 import CreditCardIcon from '@mui/icons-material/CreditCard';
 import { useNavigate, useLocation, Link } from "react-router-dom";
@@ -59,10 +57,10 @@ import pagibigLogo from "../assets/logos/pagibig.png";
 import umidLogo from "../assets/logos/umid.png";
 import driverLogo from "../assets/logos/drivers2rb.png";
 import nationalLogo from "../assets/logos/nationalid.png";
-import Profile from "../pages/Profile"; 
+import Profile from "../pages/Profile";
 
 import Snackbar from "@mui/material/Snackbar";
-import MuiAlert from "@mui/material/Alert"
+import MuiAlert from "@mui/material/Alert";
 
 const drawerWidth = 240;
 
@@ -77,23 +75,65 @@ const Dashboard = ({ children }) => {
   const [idCards, setIdCards] = useState([]);
   const [loading, setLoading] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(
-    location.pathname === "/profile" || location.pathname === "/settings"
+    location.pathname === "/profile" || location.pathname === "/cards"
   );
 
   const [openProfile, setOpenProfile] = useState(false);
   const handleOpenProfile = () => setOpenProfile(true);
   const handleCloseProfile = () => setOpenProfile(false);
 
+  // Use system preference for dark mode on first load
+  const systemPrefersDark = useMediaQuery('(prefers-color-scheme: dark)');
+  useEffect(() => {
+    if (localStorage.getItem("darkMode") === null) {
+      setDarkMode(systemPrefersDark);
+    }
+  }, [systemPrefersDark]);
+
   const theme = createTheme({
     palette: {
       mode: darkMode ? "dark" : "light",
+      ...(darkMode && {
+        background: {
+          default: "#121212",
+          paper: "#1e1e1e",
+        },
+      }),
     },
     typography: {
       fontFamily: ["Poppins", "Roboto", "Helvetica", "Arial", "sans-serif"].join(","),
       h4: { fontWeight: 600 },
       body1: { fontSize: "1rem" },
+      button: {
+        textTransform: "none",
+        fontWeight: 600,
+      },
+    },
+    components: {
+      MuiDrawer: {
+        styleOverrides: {
+          paper: {
+            backgroundColor: darkMode ? "#121212" : "#fff",
+          },
+        },
+      },
+      MuiCard: {
+        styleOverrides: {
+          root: {
+            transition: "transform 0.3s ease, box-shadow 0.3s ease",
+            cursor: "pointer",
+            "&:hover": {
+              transform: "scale(1.05)",
+              boxShadow: darkMode
+                ? "0 8px 16px rgba(255 255 255 / 0.15)"
+                : "0 8px 16px rgba(0,0,0,0.25)",
+            },
+          },
+        },
+      },
     },
   });
+
   const [logoutSnackbarOpen, setLogoutSnackbarOpen] = useState(false);
 
   const Alert = React.forwardRef(function Alert(props, ref) {
@@ -123,14 +163,13 @@ const Dashboard = ({ children }) => {
     national: nationalLogo,
   };
 
-  // NEW: Map card names to their official URLs
   const cardUrlMap = {
     philhealth: "https://www.philhealth.gov.ph/",
     sss: "https://www.sss.gov.ph/",
     tin: "https://www.bir.gov.ph/",
     pagibig: "https://www.pagibigfund.gov.ph/",
     "pag-ibig": "https://www.pagibigfund.gov.ph/",
-    umid: "https://www.umnid.gov.ph/", // Update if you have a more accurate URL
+    umid: "https://www.umnid.gov.ph/", // update if needed
     driver: "https://www.lto.gov.ph/",
     national: "https://national-id.gov.ph",
   };
@@ -172,8 +211,8 @@ const Dashboard = ({ children }) => {
       await axios.post("/auth/logout", {}, { withCredentials: true });
       localStorage.removeItem("accessToken");
       setUser(null);
-      setLogoutSnackbarOpen(true); // Show the snackbar
-      setTimeout(() => navigate("/login"), 1500); // Wait before redirecting
+      setLogoutSnackbarOpen(true);
+      setTimeout(() => navigate("/login"), 1500);
     } catch (err) {
       console.error("Logout error:", err.response?.data || err.message);
     }
@@ -189,130 +228,200 @@ const Dashboard = ({ children }) => {
   const handleSettingsClick = () => setSettingsOpen((prev) => !prev);
 
   const drawer = (
-    <Box>
-      <Box textAlign="center" p={2} sx={{ pt: { xs: 8, sm: 10 } }}>
-        <IconButton onClick={handleOpenProfile} sx={{ p: 0 }}>
-          <Avatar
-            src={user?.profilePic || ""}
-            alt={user?.username}
-            sx={{
-              width: 80,
-              height: 80,
-              mx: "auto",
-              mb: 1,
-              bgcolor: "primary.main",
-              fontSize: 32,
-              cursor: "pointer",
-            }}
+    <Box
+      sx={{
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        bgcolor: darkMode ? "#121212" : "white",
+      }}
+    >
+      <Box>
+        <Box textAlign="center" p={2} sx={{ pt: { xs: 8, sm: 10 } }}>
+          <IconButton onClick={handleOpenProfile} sx={{ p: 0 }}>
+            <Avatar
+              src={user?.profilePic || ""}
+              alt={user?.username}
+              sx={{
+                width: 80,
+                height: 80,
+                mx: "auto",
+                mb: 1,
+                bgcolor: "primary.main",
+                fontSize: 32,
+                cursor: "pointer",
+              }}
+            >
+              {!user?.profilePic && (user?.username?.[0]?.toUpperCase() || "U")}
+            </Avatar>
+          </IconButton>
+
+          <Typography variant="subtitle1" fontWeight="bold" noWrap>
+            {user?.username || "User"}
+          </Typography>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ wordWrap: "break-word" }}
+            noWrap
           >
-            {!user?.profilePic && (user?.username?.[0]?.toUpperCase() || "U")}
-          </Avatar>
-        </IconButton>
+            {user?.email || "N/A"}
+          </Typography>
+        </Box>
+        <Divider />
+        <List>
+          <ListItem disablePadding>
+            <ListItemButton component={Link} to="/" selected={location.pathname === "/"}>
+              <ListItemIcon sx={{ color: "primary.main" }}>
+                <HomeIcon />
+              </ListItemIcon>
+              <ListItemText primary="Home" />
+            </ListItemButton>
+          </ListItem>
 
-        <Typography variant="subtitle1" fontWeight="bold">{user?.username || "User"}</Typography>
-        <Typography variant="body2" color="text.secondary">{user?.email || "N/A"}</Typography>
+          <ListItem disablePadding>
+            <ListItemButton onClick={handleSettingsClick}>
+              <ListItemIcon sx={{ color: "warning.main" }}>
+                <SettingsIcon />
+              </ListItemIcon>
+              <ListItemText primary="Settings" />
+              {settingsOpen ? <ExpandLess /> : <ExpandMore />}
+            </ListItemButton>
+          </ListItem>
+          <Collapse in={settingsOpen} timeout="auto" unmountOnExit>
+            <List component="div" disablePadding sx={{ pl: 4 }}>
+              <ListItemButton onClick={handleOpenProfile}>
+                <ListItemIcon>
+                  <AccountCircleIcon />
+                </ListItemIcon>
+                <ListItemText primary="Profile" />
+              </ListItemButton>
+
+              <ListItemButton
+                component={Link}
+                to="/cards"
+                selected={location.pathname === "/cards"}
+              >
+                <ListItemIcon>
+                  <CreditCardIcon sx={{ color: "secondary.main" }} />
+                </ListItemIcon>
+                <ListItemText primary="Manage Cards" />
+              </ListItemButton>
+            </List>
+          </Collapse>
+
+          <ListItem disablePadding>
+            <ListItemButton
+              component={Link}
+              to="/personal-details"
+              selected={location.pathname === "/personal-details"}
+            >
+              <ListItemIcon sx={{ color: "info.main" }}>
+                <AccountCircleIcon />
+              </ListItemIcon>
+              <ListItemText primary="Personal Details" />
+            </ListItemButton>
+          </ListItem>
+          <ListItem disablePadding>
+            <ListItemButton
+              component={Link}
+              to="/user-file"
+              selected={location.pathname === "/user-file"}
+            >
+              <ListItemIcon sx={{ color: "secondary.main" }}>
+                <InsertDriveFileIcon />
+              </ListItemIcon>
+              <ListItemText primary="File" />
+            </ListItemButton>
+          </ListItem>
+        </List>
       </Box>
-      <Divider />
-      <List>
-        <ListItem disablePadding>
-          <ListItemButton component={Link} to="/" selected={location.pathname === "/"}>
-            <ListItemIcon sx={{ color: 'primary.main' }}><HomeIcon /></ListItemIcon>
-            <ListItemText primary="Home" />
-          </ListItemButton>
-        </ListItem>
 
-        <ListItem disablePadding>
-          <ListItemButton onClick={handleSettingsClick}>
-            <ListItemIcon sx={{ color: 'warning.main' }}><SettingsIcon /></ListItemIcon>
-            <ListItemText primary="Settings" />
-            {settingsOpen ? <ExpandLess /> : <ExpandMore />}
-          </ListItemButton>
-        </ListItem>
-        <Collapse in={settingsOpen} timeout="auto" unmountOnExit>
-          <List component="div" disablePadding sx={{ pl: 4 }}>
-            <ListItemButton onClick={handleOpenProfile}>
-              <ListItemIcon><AccountCircleIcon /></ListItemIcon>
-              <ListItemText primary="Profile" />
-            </ListItemButton>
-
-            <ListItemButton component={Link} to="/settings" selected={location.pathname === "/settings"}>
-              <ListItemIcon><CreditCardIcon sx={{ color: 'secondary.main' }} /></ListItemIcon>
-              <ListItemText primary="Manage Cards" />
-            </ListItemButton>
-          </List>
-        </Collapse>
-
-        <ListItem disablePadding>
-          <ListItemButton component={Link} to="/personal-details" selected={location.pathname === "/personal-details"}>
-            <ListItemIcon sx={{ color: 'info.main' }}><AccountCircleIcon /></ListItemIcon>
-            <ListItemText primary="Personal Details" />
-          </ListItemButton>
-        </ListItem>
-        <ListItem disablePadding >
-          <ListItemButton component={Link} to="/user-file" selected={location.pathname === "/user-file"}>
-            <ListItemIcon sx={{ color: 'secondary.main' }} ><InsertDriveFileIcon /></ListItemIcon>
-            <ListItemText primary="File" />
-          </ListItemButton>
-        </ListItem>
-
+      <Box>
         <Divider sx={{ my: 1 }} />
         <ListItem button onClick={handleLogout}>
-          <ListItemIcon sx={{ color: 'grey.600' }}><LogoutIcon /></ListItemIcon>
+          <ListItemIcon sx={{ color: "grey.600" }}>
+            <LogoutIcon />
+          </ListItemIcon>
           <ListItemText primary="Logout" />
         </ListItem>
-      </List>
+      </Box>
     </Box>
   );
 
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ display: "flex" }}>
+      <Box sx={{ display: "flex", minHeight: "100vh", flexDirection: "column" }}>
         <CssBaseline />
-        <AppBar position="fixed" sx={{ 
-          zIndex: theme.zIndex.drawer + 1,
-          background: "linear-gradient(to right, #1e3c72, #2a5298)",
-          color: "#fff" 
-        }}>
-          <Toolbar>
-            <IconButton
-              color="inherit"
-              edge="start"
-              onClick={toggleDrawer}
-              sx={{ mr: 2, display: { sm: "none" } }}
-            >
-              <MenuIcon />
-            </IconButton>
+        <AppBar
+          position="fixed"
+          sx={{
+            zIndex: theme.zIndex.drawer + 1,
+            background: "linear-gradient(to right, #1e3c72, #2a5298)",
+            color: "#fff",
+          }}
+        >
+          <Toolbar
+            sx={{
+              display: "flex",
+              flexWrap: "wrap",
+              justifyContent: "space-between",
+              gap: 1,
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center" }}>
+              <IconButton
+                color="inherit"
+                edge="start"
+                onClick={toggleDrawer}
+                sx={{ mr: 2, display: { sm: "none" } }}
+                aria-label="open drawer"
+              >
+                <MenuIcon />
+              </IconButton>
 
-            {/* Logo and App Name */}
-            <Box sx={{ display: "flex", alignItems: "center", mr: 2 }}>
+              {/* Logo and App Name */}
               <Box
                 component="img"
-                src="/favicon.ico" // Replace with your logo path if different
+                src="/favicon.ico"
                 alt="Vaultify Logo"
-                sx={{ width: 32, height: 32, mr: 1 }}
+                sx={{ width: 32, height: 32, mr: 1, userSelect: "none" }}
               />
-              <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+              <Typography
+                variant="h6"
+                sx={{ fontWeight: "bold", userSelect: "none" }}
+                noWrap
+              >
                 Vaultify
               </Typography>
             </Box>
 
-            {/* Welcome Message */}
+            {/* Welcome & Tip container with overflow hidden and responsive */}
             <Box
               sx={{
-                width: "100%",
+                flexGrow: 1,
                 overflow: "hidden",
                 position: "relative",
-                height: "4rem", // enough for 2 lines
+                height: { xs: 36, sm: 48 },
+                mx: 2,
+                minWidth: 0,
+                display: { xs: "none", sm: "block" }, // hide on xs for space
               }}
+              aria-label="Welcome messages"
             >
               {/* First Message */}
               <Typography
-                variant="h6"
+                variant="subtitle1"
+                component="div"
                 sx={{
-                  display: "inline-block",
                   position: "absolute",
                   top: 0,
+                  whiteSpace: "nowrap",
                   animation: "scrollText1 12s linear infinite",
+                  userSelect: "none",
+                  fontWeight: 600,
+                  color: "#fff",
                 }}
               >
                 Welcome, {user?.username || "Nikko"}
@@ -320,12 +429,16 @@ const Dashboard = ({ children }) => {
 
               {/* Second Message */}
               <Typography
-                variant="h6"
+                variant="subtitle1"
+                component="div"
                 sx={{
-                  display: "inline-block",
                   position: "absolute",
-                  top: "2rem",
+                  top: "1.8rem",
+                  whiteSpace: "nowrap",
                   animation: "scrollText2 15s linear infinite",
+                  userSelect: "none",
+                  fontWeight: 600,
+                  color: "#fff",
                 }}
               >
                 Vaultify Tip: Your data is encrypted end-to-end.
@@ -337,7 +450,6 @@ const Dashboard = ({ children }) => {
                     0% { transform: translateX(100%); }
                     100% { transform: translateX(-100%); }
                   }
-
                   @keyframes scrollText2 {
                     0% { transform: translateX(100%); }
                     100% { transform: translateX(-100%); }
@@ -346,58 +458,102 @@ const Dashboard = ({ children }) => {
               </style>
             </Box>
 
-            <Typography variant="body2" sx={{ mr: 2 }}>
+            <Typography
+              variant="body2"
+              sx={{
+                mr: 2,
+                whiteSpace: "nowrap",
+                userSelect: "none",
+                color: "rgba(255,255,255,0.8)",
+              }}
+              aria-label="Current date and time"
+            >
               {dateTime.toLocaleString()}
             </Typography>
 
-            <Tooltip title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"} arrow>
-              <IconButton color="inherit" onClick={toggleTheme}>
-                {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
-              </IconButton>
-            </Tooltip>
-            <Box sx={{ display: { xs: "flex", sm: "none" }, ml: 1 }}>
-              <Tooltip title="Logout" arrow>
-                <IconButton color="inherit" onClick={handleLogout}>
-                  <LogoutIcon />
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Tooltip
+                title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                arrow
+              >
+                <IconButton
+                  color="inherit"
+                  onClick={toggleTheme}
+                  aria-label="Toggle dark mode"
+                  size="large"
+                >
+                  {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
                 </IconButton>
               </Tooltip>
-            </Box>
+
+              {/* Show logout icon on small screens */}
+              <Box sx={{ display: { xs: "flex", sm: "none" } }}>
+                <Tooltip title="Logout" arrow>
+                  <IconButton
+                    color="inherit"
+                    onClick={handleLogout}
+                    aria-label="Logout"
+                    size="large"
+                  >
+                    <LogoutIcon />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            </Stack>
           </Toolbar>
         </AppBar>
 
-        <Box component="nav" sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}>
+        {/* Navigation Drawer */}
+        <Box
+          component="nav"
+          sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
+          aria-label="Navigation drawer"
+        >
           <Drawer
             variant="temporary"
             open={mobileOpen}
             onClose={toggleDrawer}
             ModalProps={{ keepMounted: true }}
-            sx={{ display: { xs: "block", sm: "none" }, "& .MuiDrawer-paper": { width: drawerWidth } }}
+            sx={{
+              display: { xs: "block", sm: "none" },
+              "& .MuiDrawer-paper": { width: drawerWidth },
+            }}
           >
             {drawer}
           </Drawer>
+
           <Drawer
             variant="permanent"
-            sx={{ display: { xs: "none", sm: "block" }, "& .MuiDrawer-paper": { width: drawerWidth } }}
             open
+            sx={{
+              display: { xs: "none", sm: "block" },
+              "& .MuiDrawer-paper": { width: drawerWidth, top: "64px", height: "calc(100% - 64px)" },
+            }}
           >
             {drawer}
           </Drawer>
         </Box>
 
+        {/* Main Content */}
         <Box
           component="main"
           sx={{
             flexGrow: 1,
-            px: { xs: 2, sm: 3 },
-            pt: { xs: 8, sm: 10 },
-            pb: 10,
+            px: { xs: 2, sm: 4, md: 6 },
+            pt: { xs: 10, sm: 12 },
+            pb: 12,
             width: { sm: `calc(100% - ${drawerWidth}px)` },
             bgcolor: "background.default",
             minHeight: "100vh",
+            display: "flex",
+            flexDirection: "column",
           }}
         >
-          <Box mb={4}>
-            <Typography variant="h6" gutterBottom>Government ID Cards</Typography>
+          <Box mb={4} width="100%">
+            <Typography variant="h5" gutterBottom fontWeight={700} letterSpacing={0.5}>
+              Government ID Cards
+            </Typography>
+
             {loading ? (
               <Box display="flex" justifyContent="center" my={4}>
                 <CircularProgress />
@@ -407,7 +563,7 @@ const Dashboard = ({ children }) => {
                 No ID cards saved yet.
               </Typography>
             ) : (
-              <Grid container spacing={2}>
+              <Grid container spacing={{ xs: 2, sm: 3, md: 4 }}>
                 {idCards.map((card) => {
                   const key = Object.keys(logoMap).find((k) =>
                     card.cardName.toLowerCase().includes(k)
@@ -421,31 +577,41 @@ const Dashboard = ({ children }) => {
                         href={cardUrlMap[key] || "#"}
                         target="_blank"
                         rel="noopener noreferrer"
-                        sx={{ textDecoration: "none" }}
+                        sx={{
+                          textDecoration: "none",
+                          display: "block",
+                          height: "100%",
+                        }}
+                        tabIndex={-1}
                       >
                         <Card
                           sx={{
                             backgroundColor: getCardColor(card.cardName),
-                            color: "#fff",
+                            color: darkMode ? "#000" : "#333",
                             borderRadius: 3,
                             boxShadow: 4,
-                            width: "100%",
-                            height: "auto",
+                            height: "100%",
                             display: "flex",
                             flexDirection: "column",
                             justifyContent: "space-between",
                             p: 2,
-                            cursor: "pointer",
                             "&:hover": {
                               boxShadow: 8,
                               transform: "scale(1.03)",
                               transition: "all 0.3s ease-in-out",
                             },
                           }}
+                          aria-label={`${card.cardName} government ID card`}
+                          role="link"
                         >
                           <Box display="flex" alignItems="center" gap={1} mb={1}>
                             {logo && (
-                              <Box component="img" src={logo} alt={card.cardName} sx={{ width: 36, height: 36 }} />
+                              <Box
+                                component="img"
+                                src={logo}
+                                alt={`${card.cardName} logo`}
+                                sx={{ width: 36, height: 36, userSelect: "none" }}
+                              />
                             )}
                             <Typography
                               variant="subtitle1"
@@ -453,16 +619,25 @@ const Dashboard = ({ children }) => {
                               sx={{
                                 textTransform: "uppercase",
                                 fontFamily: "'Poppins', sans-serif",
-                                color: "#333",
+                                color: darkMode ? "#222" : "#111",
+                                userSelect: "none",
                               }}
                             >
                               {card.cardName}
                             </Typography>
                           </Box>
-                          <Typography variant="body1"><strong>Card Number:</strong> {card.cardNumber}</Typography>
-                          <Typography variant="body1"><strong>Name:</strong> {card.fullName}</Typography>
-                          <Typography variant="body1"><strong>Birthdate:</strong> {card.birthdate}</Typography>
-                          <Typography variant="body1"><strong>Address:</strong> {card.address}</Typography>
+                          <Typography variant="body2" mb={0.5}>
+                            <strong>Card Number:</strong> {card.cardNumber}
+                          </Typography>
+                          <Typography variant="body2" mb={0.5}>
+                            <strong>Name:</strong> {card.fullName}
+                          </Typography>
+                          <Typography variant="body2" mb={0.5}>
+                            <strong>Birthdate:</strong> {card.birthdate}
+                          </Typography>
+                          <Typography variant="body2">
+                            <strong>Address:</strong> {card.address}
+                          </Typography>
                         </Card>
                       </Box>
                     </Grid>
@@ -471,16 +646,20 @@ const Dashboard = ({ children }) => {
               </Grid>
             )}
           </Box>
+
           <Divider sx={{ my: 4 }} />
 
+          {/* Render children components */}
           {children}
+
+          {/* Footer */}
           <Box
             component="footer"
             sx={{
-              position: 'fixed',
+              position: "fixed",
               bottom: 0,
               left: { sm: `${drawerWidth}px` },
-              width: { xs: '100%', sm: `calc(100% - ${drawerWidth}px)` },
+              width: { xs: "100%", sm: `calc(100% - ${drawerWidth}px)` },
               bgcolor: "background.paper",
               boxShadow: 3,
               py: 1,
@@ -493,12 +672,7 @@ const Dashboard = ({ children }) => {
               spacing={2}
               sx={{ mb: 1, flexWrap: "wrap" }}
             >
-              <IconButton
-                component="a"
-                href="/about"
-                color="inherit"
-                aria-label="About"
-              >
+              <IconButton component="a" href="/about" color="inherit" aria-label="About">
                 <InfoIcon />
               </IconButton>
 
@@ -532,7 +706,6 @@ const Dashboard = ({ children }) => {
               >
                 <GitHubIcon />
               </IconButton>
-
             </Stack>
 
             <Typography
@@ -546,47 +719,58 @@ const Dashboard = ({ children }) => {
                 fontWeight: 300,
               }}
             >
-              &copy; {new Date().getFullYear()} Vaultify . All rights reserved. Built by <strong style={{ color: "#1976d2" }}>Nikko MP</strong>.
+              &copy; {new Date().getFullYear()} Vaultify . All rights reserved. Built by{" "}
+              <strong style={{ color: "#1976d2" }}>Nikko MP</strong>.
             </Typography>
           </Box>
         </Box>
-      </Box>
-      <Dialog
-        open={openProfile}
-        onClose={handleCloseProfile}
-        fullWidth
-        maxWidth="sm"
-        scroll="paper"
-      >
-        <DialogTitle sx={{ m: 0, p: 2 }}>
-          Profile
-          <IconButton
-            aria-label="close"
-            onClick={handleCloseProfile}
-            sx={{
-              position: "absolute",
-              right: 8,
-              top: 8,
-              color: (theme) => theme.palette.grey[500],
-            }}
+
+        {/* Profile Dialog */}
+        <Dialog
+          open={openProfile}
+          onClose={handleCloseProfile}
+          fullWidth
+          maxWidth="sm"
+          scroll="paper"
+          aria-labelledby="profile-dialog-title"
+        >
+          <DialogTitle sx={{ m: 0, p: 2 }} id="profile-dialog-title">
+            Profile
+            <IconButton
+              aria-label="close"
+              onClick={handleCloseProfile}
+              sx={{
+                position: "absolute",
+                right: 8,
+                top: 8,
+                color: (theme) => theme.palette.grey[500],
+              }}
+              size="large"
+            >
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent dividers>
+            <Profile />
+          </DialogContent>
+        </Dialog>
+
+        {/* Logout Snackbar */}
+        <Snackbar
+          open={logoutSnackbarOpen}
+          autoHideDuration={3000}
+          onClose={() => setLogoutSnackbarOpen(false)}
+          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        >
+          <Alert
+            onClose={() => setLogoutSnackbarOpen(false)}
+            severity="success"
+            sx={{ width: "100%" }}
           >
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent dividers>
-          <Profile />
-        </DialogContent>
-      </Dialog>
-      <Snackbar
-        open={logoutSnackbarOpen}
-        autoHideDuration={3000}
-        onClose={() => setLogoutSnackbarOpen(false)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      >
-        <Alert onClose={() => setLogoutSnackbarOpen(false)} severity="success" sx={{ width: '100%' }}>
-          You have been logged out successfully.
-        </Alert>
-      </Snackbar>
+            You have been logged out successfully.
+          </Alert>
+        </Snackbar>
+      </Box>
     </ThemeProvider>
   );
 };

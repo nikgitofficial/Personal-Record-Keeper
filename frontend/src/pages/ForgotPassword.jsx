@@ -13,6 +13,7 @@ import {
   IconButton,
   InputAdornment,
   LinearProgress,
+  CircularProgress, // Added import
 } from "@mui/material";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
@@ -34,12 +35,17 @@ const ForgotPassword = () => {
   });
   const [countdown, setCountdown] = useState(0);
 
+  // Added loading states
+  const [loadingSendOtp, setLoadingSendOtp] = useState(false);
+  const [loadingResetPwd, setLoadingResetPwd] = useState(false);
+
   const handleSnackbarClose = () =>
     setSnackbar({ ...snackbar, open: false });
 
   const sendOTP = async () => {
+    if (countdown > 0) return;
+    setLoadingSendOtp(true);  // start loading
     try {
-      if (countdown > 0) return;
       const res = await axios.post("/auth/forgot-password", { email });
       setSnackbar({
         open: true,
@@ -54,6 +60,8 @@ const ForgotPassword = () => {
         message: err?.response?.data?.message || "Failed to send OTP",
         severity: "error",
       });
+    } finally {
+      setLoadingSendOtp(false);  // stop loading
     }
   };
 
@@ -66,7 +74,7 @@ const ForgotPassword = () => {
       });
       return;
     }
-
+    setLoadingResetPwd(true);  // start loading
     try {
       const res = await axios.post("/auth/reset-password", {
         email,
@@ -95,6 +103,8 @@ const ForgotPassword = () => {
         message: isOtpError ? "Invalid OTP. Please try again." : message,
         severity: "error",
       });
+    } finally {
+      setLoadingResetPwd(false);  // stop loading
     }
   };
 
@@ -135,7 +145,8 @@ const ForgotPassword = () => {
                 fullWidth
                 variant="contained"
                 onClick={sendOTP}
-                disabled={!email || countdown > 0}
+                disabled={!email || countdown > 0 || loadingSendOtp}
+                startIcon={loadingSendOtp && <CircularProgress size={20} />}
               >
                 {countdown > 0
                   ? `Resend OTP in ${countdown}s`
@@ -225,8 +236,10 @@ const ForgotPassword = () => {
                     !otp ||
                     !newPassword ||
                     !confirmPassword ||
-                    !isPasswordMatch
+                    !isPasswordMatch ||
+                    loadingResetPwd
                   }
+                  startIcon={loadingResetPwd && <CircularProgress size={20} />}
                 >
                   Reset Password
                 </Button>

@@ -12,7 +12,7 @@ const sendEmail = async (to, subject, otp) => {
 
   const htmlContent = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9;">
-      <h2 style="color: #2e7d32;">🔐 Taskly Password Reset</h2>
+      <h2 style="color: #2e7d32;">🔐 Personal-Record-Keeper Password Reset</h2>
       <p>Hello,</p>
       <p>You recently requested to reset your password. Please use the OTP below to proceed:</p>
       <div style="margin: 20px 0; text-align: center;">
@@ -20,12 +20,12 @@ const sendEmail = async (to, subject, otp) => {
       </div>
       <p>This OTP is valid for a limited time. If you didn't request a password reset, you can safely ignore this email.</p>
       <br>
-      <p style="font-size: 14px; color: #555;">— Taskly Team</p>
+      <p style="font-size: 14px; color: #555;">— Nikko MP</p>
     </div>
   `;
 
   await transporter.sendMail({
-    from: `"Taskly Support" <${process.env.OTP_EMAIL}>`,
+    from: `"NikTech Support" <${process.env.OTP_EMAIL}>`,
     to,
     subject,
     html: htmlContent,

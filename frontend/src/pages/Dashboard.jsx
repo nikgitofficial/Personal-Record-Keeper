@@ -546,7 +546,7 @@ const Dashboard = ({ children }) => {
                 fontWeight: 300,
               }}
             >
-              &copy; {new Date().getFullYear()} Vaultify . All rights reserved. Built by <strong style={{ color: "#1976d2" }}>Nikpacs</strong>.
+              &copy; {new Date().getFullYear()} Vaultify . All rights reserved. Built by <strong style={{ color: "#1976d2" }}>Nikko MP</strong>.
             </Typography>
           </Box>
         </Box>

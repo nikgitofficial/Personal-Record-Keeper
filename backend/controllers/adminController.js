@@ -41,13 +41,32 @@ export const getTotalPersonalDetails = async (req, res) => {
 // Get all files
 export const getAllFiles = async (req, res) => {
   try {
-    const files = await File.find().sort({ createdAt: -1 });
-    res.json(files);
+    // Populate userId with username only
+    const files = await File.find()
+      .sort({ createdAt: -1 })
+      .populate('userId', 'username'); // <-- ensures uploadedBy info is available
+
+    // Map files to include default values for frontend
+    const filesWithDefaults = files.map(file => ({
+      _id: file._id,
+      filename: file.filename,
+      originalName: file.originalName || file.filename, // fallback if originalName not stored
+      description: file.description || "-", // fallback if description not stored
+      url: file.url,
+      public_id: file.public_id,
+      type: file.type,
+      resource_type: file.resource_type,
+      uploadedBy: file.userId, // populated user
+      createdAt: file.createdAt,
+    }));
+
+    res.json(filesWithDefaults);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Failed to fetch files" });
   }
 };
+
 
 // Get all personal details
 export const getAllPersonalDetails = async (req, res) => {

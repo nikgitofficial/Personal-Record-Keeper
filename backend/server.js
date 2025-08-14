@@ -9,7 +9,8 @@ import idCardRoutes from "./routes/idCardRoutes.js";
 import personalDetailRoutes from "./routes/personalDetailRoutes.js";
 import profileRoutes from './routes/profileRoutes.js';
 import fileRoutes from './routes/fileRoutes.js';
-import adminStatsRoutes from "./routes/adminStatsRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
+
 
 
 dotenv.config();
@@ -46,7 +47,8 @@ app.use("/api/id-cards", idCardRoutes);
 app.use("/api/personal-details", personalDetailRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/files', fileRoutes);
-app.use("/api/admin-stats", adminStatsRoutes);
+app.use("/api/admin-stats", adminRoutes);
+
 
 
 

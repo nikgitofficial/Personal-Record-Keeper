@@ -71,28 +71,28 @@ export default function AdminPage() {
     else document.body.classList.remove("dark-mode");
   };
 
-  // Fetch all stats
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        setLoadingStats(true);
-        const [userRes, filesRes, detailsRes] = await Promise.all([
-  api.get("/auth/user-count", { headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` } }),
-  api.get("/admin-stats/files-uploaded", { headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` } }),
-  api.get("/admin-stats/personal-details", { headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` } }),
-]);
+  // Fetch dashboard stats (Total Users, Files, Personal Details)
+// Fetch dashboard stats
+useEffect(() => {
+  const fetchStats = async () => {
+    try {
+      setLoadingStats(true);
+      const res = await api.get("/admin-stats/dashboard-stats", {
+        headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
+      });
 
-        setTotalUsers(userRes.data.totalUsers);
-        setTotalFiles(filesRes.data.totalFiles);
-        setTotalDetails(detailsRes.data.totalDetails);
-      } catch (err) {
-        console.error("Failed to fetch stats", err);
-      } finally {
-        setLoadingStats(false);
-      }
-    };
-    fetchStats();
-  }, []);
+      setTotalUsers(res.data.totalUsers);
+      setTotalFiles(res.data.totalFiles);
+      setTotalDetails(res.data.totalDetails);
+    } catch (err) {
+      console.error("Failed to fetch stats", err);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+  fetchStats();
+}, []);
+
 
   const fetchAllUsers = async () => {
     setLoadingUsers(true);
@@ -162,10 +162,23 @@ export default function AdminPage() {
     <Box sx={{ display: "flex", backgroundColor: darkMode ? "#121212" : theme.palette.grey[50] }}>
       <CssBaseline />
       {/* AppBar */}
-      <AppBar position="fixed" sx={{ zIndex: theme.zIndex.drawer + 1, background: "linear-gradient(to right, #1e3c72, #2a5298)", color: "#fff" }}>
+      <AppBar
+        position="fixed"
+        sx={{
+          zIndex: theme.zIndex.drawer + 1,
+          background: "linear-gradient(to right, #1e3c72, #2a5298)",
+          color: "#fff",
+        }}
+      >
         <Toolbar sx={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 1 }}>
           <Box sx={{ display: "flex", alignItems: "center" }}>
-            <IconButton color="inherit" edge="start" onClick={handleDrawerToggle} sx={{ mr: 2, display: { sm: "none" } }} aria-label="open drawer">
+            <IconButton
+              color="inherit"
+              edge="start"
+              onClick={handleDrawerToggle}
+              sx={{ mr: 2, display: { sm: "none" } }}
+              aria-label="open drawer"
+            >
               <MenuIcon />
             </IconButton>
             <Box component="img" src="/favicon.ico" alt="Admin Logo" sx={{ width: 32, height: 32, mr: 1 }} />
@@ -173,12 +186,41 @@ export default function AdminPage() {
               Admin Dashboard
             </Typography>
           </Box>
-          {/* Center scrolling text */}
-          <Box sx={{ flexGrow: 1, overflow: "hidden", position: "relative", height: { xs: 36, sm: 48 }, mx: 2, minWidth: 0, display: { xs: "none", sm: "block" } }}>
-            <Typography sx={{ position: "absolute", top: 0, whiteSpace: "nowrap", animation: "scrollText1 12s linear infinite", fontWeight: 600, color: "#fff" }}>
+
+          {/* Scrolling Text */}
+          <Box
+            sx={{
+              flexGrow: 1,
+              overflow: "hidden",
+              position: "relative",
+              height: { xs: 36, sm: 48 },
+              mx: 2,
+              minWidth: 0,
+              display: { xs: "none", sm: "block" },
+            }}
+          >
+            <Typography
+              sx={{
+                position: "absolute",
+                top: 0,
+                whiteSpace: "nowrap",
+                animation: "scrollText1 12s linear infinite",
+                fontWeight: 600,
+                color: "#fff",
+              }}
+            >
               Welcome, Admin
             </Typography>
-            <Typography sx={{ position: "absolute", top: "1.8rem", whiteSpace: "nowrap", animation: "scrollText2 15s linear infinite", fontWeight: 600, color: "#fff" }}>
+            <Typography
+              sx={{
+                position: "absolute",
+                top: "1.8rem",
+                whiteSpace: "nowrap",
+                animation: "scrollText2 15s linear infinite",
+                fontWeight: 600,
+                color: "#fff",
+              }}
+            >
               Tip: Monitor users and platform activity efficiently.
             </Typography>
             <style>{`
@@ -186,50 +228,129 @@ export default function AdminPage() {
               @keyframes scrollText2 {0% { transform: translateX(100%); }100% { transform: translateX(-100%); }}
             `}</style>
           </Box>
-          {/* Right icons */}
+
+          {/* Right Icons */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography variant="body2" sx={{ whiteSpace: "nowrap", color: "rgba(255,255,255,0.8)" }}>{new Date().toLocaleString()}</Typography>
+            <Typography variant="body2" sx={{ whiteSpace: "nowrap", color: "rgba(255,255,255,0.8)" }}>
+              {new Date().toLocaleString()}
+            </Typography>
             <Tooltip title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"} arrow>
-              <IconButton color="inherit" onClick={toggleTheme}>{darkMode ? <Brightness7Icon /> : <Brightness4Icon />}</IconButton>
+              <IconButton color="inherit" onClick={toggleTheme}>
+                {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
+              </IconButton>
             </Tooltip>
-            <Tooltip title="Notifications" arrow><IconButton color="inherit"><Notifications /></IconButton></Tooltip>
-            <Tooltip title="Settings" arrow><IconButton color="inherit"><Settings /></IconButton></Tooltip>
-            <Tooltip title="Account" arrow><IconButton color="inherit"><AccountCircle /></IconButton></Tooltip>
-            <Tooltip title="Logout" arrow><IconButton color="inherit" onClick={handleLogout}><LogoutIcon /></IconButton></Tooltip>
+            <Tooltip title="Notifications" arrow>
+              <IconButton color="inherit">
+                <Notifications />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Settings" arrow>
+              <IconButton color="inherit">
+                <Settings />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Account" arrow>
+              <IconButton color="inherit">
+                <AccountCircle />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Logout" arrow>
+              <IconButton color="inherit" onClick={handleLogout}>
+                <LogoutIcon />
+              </IconButton>
+            </Tooltip>
           </Box>
         </Toolbar>
       </AppBar>
 
-      <Drawer variant="permanent" sx={{ display: { xs: "none", sm: "block" }, "& .MuiDrawer-paper": { width: drawerWidth } }} open>{drawer}</Drawer>
-      <Drawer variant="temporary" open={mobileOpen} onClose={handleDrawerToggle} ModalProps={{ keepMounted: true }} sx={{ display: { xs: "block", sm: "none" }, "& .MuiDrawer-paper": { width: drawerWidth } }}>{drawer}</Drawer>
+      {/* Drawer */}
+      <Drawer
+        variant="permanent"
+        sx={{ display: { xs: "none", sm: "block" }, "& .MuiDrawer-paper": { width: drawerWidth } }}
+        open
+      >
+        {drawer}
+      </Drawer>
+      <Drawer
+        variant="temporary"
+        open={mobileOpen}
+        onClose={handleDrawerToggle}
+        ModalProps={{ keepMounted: true }}
+        sx={{ display: { xs: "block", sm: "none" }, "& .MuiDrawer-paper": { width: drawerWidth } }}
+      >
+        {drawer}
+      </Drawer>
 
       {/* Main Content */}
-      <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, sm: 3 }, mt: 8, width: { sm: `calc(100% - ${drawerWidth}px)` }, minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          p: { xs: 2, sm: 3 },
+          mt: 8,
+          width: { sm: `calc(100% - ${drawerWidth}px)` },
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          textAlign: "center",
+        }}
+      >
         {view === "stats" && (
           <>
-            <Typography variant="h4" gutterBottom fontWeight="bold" sx={{ color: "#1e3c72" }}>Welcome, Admin</Typography>
-            <Typography variant="body1" gutterBottom color="text.secondary">Here’s an overview of your platform’s statistics and recent activity.</Typography>
+            <Typography variant="h4" gutterBottom fontWeight="bold" sx={{ color: "#1e3c72" }}>
+              Welcome, Admin
+            </Typography>
+            <Typography variant="body1" gutterBottom color="text.secondary">
+              Here’s an overview of your platform’s statistics and recent activity.
+            </Typography>
 
             <Grid container spacing={3} sx={{ mt: 2, maxWidth: 1000 }} justifyContent="center">
               {[
-                { title: "Total Users", value: loadingStats ? <CircularProgress size={24} /> : totalUsers },
-                { title: "Total Files Uploaded", value: loadingStats ? <CircularProgress size={24} /> : totalFiles },
-                { title: "Total Personal Details", value: loadingStats ? <CircularProgress size={24} /> : totalDetails },
+                { title: "Total Users", value: totalUsers },
+                { title: "Total Files Uploaded", value: totalFiles },
+                { title: "Total Personal Details", value: totalDetails },
                 { title: "Active Sessions", value: "342" },
                 { title: "Revenue", value: "$12,530" },
               ].map((card, index) => (
                 <Grid item xs={12} sm={6} md={4} key={index}>
-                  <Paper sx={{ p: 3, textAlign: "center", borderRadius: 3, boxShadow: "0 4px 20px rgba(0,0,0,0.05)", backgroundColor: "#fff", transition: "transform 0.2s ease-in-out", "&:hover": { transform: "translateY(-4px)", boxShadow: "0 8px 24px rgba(0,0,0,0.1)" } }}>
-                    <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1, color: "#1976d2" }}>{card.title}</Typography>
-                    <Typography variant="h4">{card.value}</Typography>
+                  <Paper
+                    sx={{
+                      p: 3,
+                      textAlign: "center",
+                      borderRadius: 3,
+                      boxShadow: "0 4px 20px rgba(0,0,0,0.05)",
+                      backgroundColor: "#fff",
+                      transition: "transform 0.2s ease-in-out",
+                      "&:hover": {
+                        transform: "translateY(-4px)",
+                        boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
+                      },
+                    }}
+                  >
+                    <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1, color: "#1976d2" }}>
+                      {card.title}
+                    </Typography>
+                    <Typography variant="h4">
+                      {loadingStats && card.value !== "Active Sessions" && card.value !== "Revenue" ? (
+                        <CircularProgress size={28} />
+                      ) : (
+                        card.value
+                      )}
+                    </Typography>
                   </Paper>
                 </Grid>
               ))}
             </Grid>
 
             <Box sx={{ mt: 4, display: "flex", gap: 2, flexWrap: "wrap", justifyContent: "center" }}>
-              <Button variant="contained" color="primary" onClick={handleManageUsers}>Manage Users</Button>
-              <Button variant="outlined" color="secondary">View Reports</Button>
+              <Button variant="contained" color="primary" onClick={handleManageUsers}>
+                Manage Users
+              </Button>
+              <Button variant="outlined" color="secondary">
+                View Reports
+              </Button>
             </Box>
           </>
         )}
@@ -237,11 +358,17 @@ export default function AdminPage() {
         {view === "users" && (
           <>
             <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2, flexWrap: "wrap", gap: 1, width: "100%", maxWidth: 1000 }}>
-              <Typography variant="h5" fontWeight="bold">All Users</Typography>
-              <Button variant="outlined" onClick={() => setView("stats")}>Back to Dashboard</Button>
+              <Typography variant="h5" fontWeight="bold">
+                All Users
+              </Typography>
+              <Button variant="outlined" onClick={() => setView("stats")}>
+                Back to Dashboard
+              </Button>
             </Box>
 
-            {loadingUsers ? <CircularProgress /> : (
+            {loadingUsers ? (
+              <CircularProgress />
+            ) : (
               <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: "0 4px 20px rgba(0,0,0,0.05)", maxWidth: 1000 }}>
                 <Table>
                   <TableHead>
@@ -269,7 +396,12 @@ export default function AdminPage() {
         )}
       </Box>
 
-      <Snackbar open={logoutSnackbarOpen} autoHideDuration={1500} message="Logged out successfully" onClose={() => setLogoutSnackbarOpen(false)} />
+      <Snackbar
+        open={logoutSnackbarOpen}
+        autoHideDuration={1500}
+        message="Logged out successfully"
+        onClose={() => setLogoutSnackbarOpen(false)}
+      />
     </Box>
   );
 }

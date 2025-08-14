@@ -121,24 +121,23 @@ const PersonalDetails = () => {
     setConfirmDialogOpen(true);
   };
 
-const confirmDelete = async () => {
-  if (!detailToDelete) return;
+  const confirmDelete = async () => {
+    if (!detailToDelete) return;
 
-  setDeleting(true);  // <-- start loading spinner here
+    setDeleting(true);
 
-  try {
-    await axios.delete(`/personal-details/${detailToDelete}`);
-    setSnackbar({ open: true, message: "Personal detail deleted", severity: "info" });
-    fetchDetails();
-  } catch (err) {
-    setSnackbar({ open: true, message: "Failed to delete personal detail", severity: "error" });
-  } finally {
-    setDeleting(false);           // <-- stop loading spinner here
-    setConfirmDialogOpen(false);
-    setDetailToDelete(null);
-  }
-};
-
+    try {
+      await axios.delete(`/personal-details/${detailToDelete}`);
+      setSnackbar({ open: true, message: "Personal detail deleted", severity: "info" });
+      fetchDetails();
+    } catch (err) {
+      setSnackbar({ open: true, message: "Failed to delete personal detail", severity: "error" });
+    } finally {
+      setDeleting(false);
+      setConfirmDialogOpen(false);
+      setDetailToDelete(null);
+    }
+  };
 
   const openAddModal = () => {
     setForm({ fullName: "", birthdate: "", address: "", phoneNumber: "", email: "" });
@@ -152,66 +151,56 @@ const confirmDelete = async () => {
   );
 
   return (
-    <Box p={2} maxWidth="100%">
+    <Box
+      p={2}
+      display="flex"
+      flexDirection="column"
+      alignItems="center" // aligns everything to the right
+      maxWidth="100%"
+    >
+      {/* Search & Add Button */}
       <Box
         mb={2}
         display="flex"
-        justifyContent="space-between"
+        justifyContent="flex-end"
         flexWrap="wrap"
         gap={2}
+        width={isMobile ? "100%" : 650} // fixed width for alignment
       >
         <TextField
           label="Search by Full Name"
           value={filterName}
           onChange={(e) => setFilterName(e.target.value)}
           size="small"
-          sx={{ minWidth: 240, flexGrow: 1, maxWidth: isMobile ? "100%" : 300 }}
+          sx={{ minWidth: 240, flexGrow: 1 }}
         />
         <Button variant="contained" onClick={openAddModal} sx={{ whiteSpace: "nowrap" }}>
           Add Personal Detail
         </Button>
       </Box>
 
-      <Typography variant="h6" fontWeight={600} gutterBottom>
+      {/* Title */}
+      <Typography variant="h6" fontWeight={600} gutterBottom align="right" sx={{ width: isMobile ? "100%" : 650 }}>
         Saved Personal Details
       </Typography>
 
+      {/* Table or Loading */}
       {loading ? (
-        <Box display="flex" justifyContent="center" my={4}>
+        <Box display="flex" justifyContent="flex-end" my={4} width={isMobile ? "100%" : 650}>
           <CircularProgress />
         </Box>
       ) : (
         <TableContainer
-  component={Paper}
-  sx={{
-    maxHeight: isMobile ? 240 : 300,
-    overflowX: "auto",
-    borderRadius: 2,
-    boxShadow: theme.shadows[3],
-  }}
->
-
-          <Table
-            stickyHeader
-            aria-label="personal details table"
-            size="small"
-            sx={{
-              minWidth: 650,
-              "& .MuiTableRow-root": {
-                transition: "background-color 0.3s",
-                cursor: "default",
-              },
-              "& .MuiTableRow-root:hover": {
-                backgroundColor:
-                  theme.palette.mode === "dark"
-                    ? "rgba(255, 255, 255, 0.1)"
-                    : "rgba(0, 0, 0, 0.04)",
-              },
-              "& .MuiTableCell-root": {
-                transition: "color 0.3s",
-              },
-            }}
-          >
+          component={Paper}
+          sx={{
+            maxHeight: isMobile ? 240 : 300,
+            overflowX: "auto",
+            borderRadius: 2,
+            boxShadow: theme.shadows[3],
+            width: isMobile ? "100%" : 650,
+          }}
+        >
+          <Table stickyHeader aria-label="personal details table" size="small">
             <TableHead>
               <TableRow>
                 <TableCell sx={{ fontWeight: "bold" }}>Full Name</TableCell>
@@ -245,7 +234,6 @@ const confirmDelete = async () => {
                           onClick={() => handleEdit(detail)}
                           color="primary"
                           size="small"
-                          sx={{ cursor: "pointer" }}
                         >
                           <EditIcon />
                         </IconButton>
@@ -255,7 +243,6 @@ const confirmDelete = async () => {
                           onClick={() => handleDelete(detail._id)}
                           color="error"
                           size="small"
-                          sx={{ cursor: "pointer" }}
                         >
                           <DeleteIcon />
                         </IconButton>
@@ -270,26 +257,13 @@ const confirmDelete = async () => {
       )}
 
       {/* Form Modal */}
-      <Dialog
-        open={formModalOpen}
-        onClose={() => setFormModalOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
+      <Dialog open={formModalOpen} onClose={() => setFormModalOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{isEditing ? "Edit Personal Detail" : "Add Personal Detail"}</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 0.5 }}>
             <Grid item xs={12} sm={6}>
-              <TextField
-                label="Full Name"
-                name="fullName"
-                value={form.fullName}
-                onChange={handleChange}
-                fullWidth
-                required
-              />
+              <TextField label="Full Name" name="fullName" value={form.fullName} onChange={handleChange} fullWidth required />
             </Grid>
-
             <Grid item xs={12} sm={6}>
               <TextField
                 label="Birthdate"
@@ -302,50 +276,22 @@ const confirmDelete = async () => {
                 required
               />
             </Grid>
-
             <Grid item xs={12}>
-              <TextField
-                label="Address"
-                name="address"
-                value={form.address}
-                onChange={handleChange}
-                fullWidth
-                multiline
-                rows={2}
-                required
-              />
+              <TextField label="Address" name="address" value={form.address} onChange={handleChange} fullWidth multiline rows={2} required />
             </Grid>
-
             <Grid item xs={12} sm={6}>
-              <TextField
-                label="Phone Number"
-                name="phoneNumber"
-                value={form.phoneNumber}
-                onChange={handleChange}
-                fullWidth
-              />
+              <TextField label="Phone Number" name="phoneNumber" value={form.phoneNumber} onChange={handleChange} fullWidth />
             </Grid>
-
             <Grid item xs={12} sm={6}>
-              <TextField
-                label="Email"
-                name="email"
-                type="email"
-                value={form.email}
-                onChange={handleChange}
-                fullWidth
-              />
+              <TextField label="Email" name="email" type="email" value={form.email} onChange={handleChange} fullWidth />
             </Grid>
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setFormModalOpen(false)} disabled={buttonDisabled}>
-            Cancel
+          <Button onClick={() => setFormModalOpen(false)} disabled={buttonDisabled}>Cancel</Button>
+          <Button variant="contained" onClick={handleSave} disabled={buttonDisabled}>
+            {buttonDisabled ? <CircularProgress size={20} color="inherit" /> : (isEditing ? "Update Detail" : "Add Detail")}
           </Button>
-         <Button variant="contained" onClick={handleSave} disabled={buttonDisabled}>
-  {buttonDisabled ? <CircularProgress size={20} color="inherit" /> : (isEditing ? "Update Detail" : "Add Detail")}
-</Button>
-
         </DialogActions>
       </Dialog>
 
@@ -360,9 +306,8 @@ const confirmDelete = async () => {
         <DialogActions>
           <Button onClick={() => setConfirmDialogOpen(false)}>Cancel</Button>
           <Button color="error" onClick={confirmDelete} disabled={deleting} variant="contained">
-  {deleting ? <CircularProgress size={20} color="inherit" /> : 'Delete'}
-</Button>
-
+            {deleting ? <CircularProgress size={20} color="inherit" /> : 'Delete'}
+          </Button>
         </DialogActions>
       </Dialog>
 

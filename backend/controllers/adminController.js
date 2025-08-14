@@ -36,3 +36,26 @@ export const getTotalPersonalDetails = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch total personal details" });
   }
 };
+
+
+// Get all files
+export const getAllFiles = async (req, res) => {
+  try {
+    const files = await File.find().sort({ createdAt: -1 });
+    res.json(files);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to fetch files" });
+  }
+};
+
+// Get all personal details
+export const getAllPersonalDetails = async (req, res) => {
+  try {
+    const details = await PersonalDetail.find().sort({ createdAt: -1 });
+    res.json(details);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to fetch personal details" });
+  }
+};

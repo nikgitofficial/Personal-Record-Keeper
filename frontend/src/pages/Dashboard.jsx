@@ -1,4 +1,5 @@
 import React, { useContext, useState, useEffect } from "react";
+import DashboardIcon from "@mui/icons-material/Dashboard";
 import {
   AppBar,
   Toolbar,
@@ -270,72 +271,94 @@ const Dashboard = ({ children }) => {
           </Typography>
         </Box>
         <Divider />
-        <List>
-          <ListItem disablePadding>
-            <ListItemButton component={Link} to="/" selected={location.pathname === "/"}>
-              <ListItemIcon sx={{ color: "primary.main" }}>
-                <HomeIcon />
-              </ListItemIcon>
-              <ListItemText primary="Home" />
-            </ListItemButton>
-          </ListItem>
+      <List>
+  {/* Existing links */}
+  <ListItem disablePadding>
+    <ListItemButton component={Link} to="/" selected={location.pathname === "/"}>
+      <ListItemIcon sx={{ color: "primary.main" }}>
+        <HomeIcon />
+      </ListItemIcon>
+      <ListItemText primary="Home" />
+    </ListItemButton>
+  </ListItem>
 
-          <ListItem disablePadding>
-            <ListItemButton onClick={handleSettingsClick}>
-              <ListItemIcon sx={{ color: "warning.main" }}>
-                <SettingsIcon />
-              </ListItemIcon>
-              <ListItemText primary="Settings" />
-              {settingsOpen ? <ExpandLess /> : <ExpandMore />}
-            </ListItemButton>
-          </ListItem>
-          <Collapse in={settingsOpen} timeout="auto" unmountOnExit>
-            <List component="div" disablePadding sx={{ pl: 4 }}>
-              <ListItemButton onClick={handleOpenProfile}>
-                <ListItemIcon>
-                  <AccountCircleIcon />
-                </ListItemIcon>
-                <ListItemText primary="Profile" />
-              </ListItemButton>
+  {/* Settings collapse */}
+  <ListItem disablePadding>
+    <ListItemButton onClick={handleSettingsClick}>
+      <ListItemIcon sx={{ color: "warning.main" }}>
+        <SettingsIcon />
+      </ListItemIcon>
+      <ListItemText primary="Settings" />
+      {settingsOpen ? <ExpandLess /> : <ExpandMore />}
+    </ListItemButton>
+  </ListItem>
+  <Collapse in={settingsOpen} timeout="auto" unmountOnExit>
+    <List component="div" disablePadding sx={{ pl: 4 }}>
+      <ListItemButton onClick={handleOpenProfile}>
+        <ListItemIcon>
+          <AccountCircleIcon />
+        </ListItemIcon>
+        <ListItemText primary="Profile" />
+      </ListItemButton>
 
-              <ListItemButton
-                component={Link}
-                to="/cards"
-                selected={location.pathname === "/cards"}
-              >
-                <ListItemIcon>
-                  <CreditCardIcon sx={{ color: "secondary.main" }} />
-                </ListItemIcon>
-                <ListItemText primary="Manage Cards" />
-              </ListItemButton>
-            </List>
-          </Collapse>
+      <ListItemButton
+        component={Link}
+        to="/cards"
+        selected={location.pathname === "/cards"}
+      >
+        <ListItemIcon>
+          <CreditCardIcon sx={{ color: "secondary.main" }} />
+        </ListItemIcon>
+        <ListItemText primary="Manage Cards" />
+      </ListItemButton>
+    </List>
+  </Collapse>
 
-          <ListItem disablePadding>
-            <ListItemButton
-              component={Link}
-              to="/personal-details"
-              selected={location.pathname === "/personal-details"}
-            >
-              <ListItemIcon sx={{ color: "info.main" }}>
-                <AccountCircleIcon />
-              </ListItemIcon>
-              <ListItemText primary="Personal Details" />
-            </ListItemButton>
-          </ListItem>
-          <ListItem disablePadding>
-            <ListItemButton
-              component={Link}
-              to="/user-file"
-              selected={location.pathname === "/user-file"}
-            >
-              <ListItemIcon sx={{ color: "secondary.main" }}>
-                <InsertDriveFileIcon />
-              </ListItemIcon>
-              <ListItemText primary="File" />
-            </ListItemButton>
-          </ListItem>
-        </List>
+  {/* Personal Details */}
+  <ListItem disablePadding>
+    <ListItemButton
+      component={Link}
+      to="/personal-details"
+      selected={location.pathname === "/personal-details"}
+    >
+      <ListItemIcon sx={{ color: "info.main" }}>
+        <AccountCircleIcon />
+      </ListItemIcon>
+      <ListItemText primary="Personal Details" />
+    </ListItemButton>
+  </ListItem>
+
+  {/* File */}
+  <ListItem disablePadding>
+    <ListItemButton
+      component={Link}
+      to="/user-file"
+      selected={location.pathname === "/user-file"}
+    >
+      <ListItemIcon sx={{ color: "secondary.main" }}>
+        <InsertDriveFileIcon />
+      </ListItemIcon>
+      <ListItemText primary="File" />
+    </ListItemButton>
+  </ListItem>
+
+  {/* Admin Dashboard - only visible for admin */}
+  {user?.role === "admin" && (
+    <ListItem disablePadding>
+      <ListItemButton
+        component={Link}
+        to="/admin-dashboard"
+        selected={location.pathname === "/admin-admin-dashboard"}
+      >
+        <ListItemIcon sx={{ color: "error.main" }}>
+          <DashboardIcon />
+        </ListItemIcon>
+        <ListItemText primary="Admin Dashboard" />
+      </ListItemButton>
+    </ListItem>
+  )}
+</List>
+
       </Box>
 
       <Box>

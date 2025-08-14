@@ -1,20 +1,14 @@
 import express from "express";
 import authenticate from "../middleware/authMiddleware.js";
-import {
-  getDashboardStats,
-  getAllUsers,
-  getAllFiles,
-  getAllPersonalDetails,
-} from "../controllers/adminController.js";
+import { getDashboardStats, getTotalFiles, getTotalPersonalDetails } from "../controllers/adminController.js";
 
 const router = express.Router();
 
-// 📊 Dashboard stats
-router.get("/dashboard-stats", authenticate);
+// Combined dashboard stats
+router.get("/dashboard-stats", authenticate, getDashboardStats);
 
-// 👤 Admin tables
-router.get("/all-users", authenticate, getAllUsers);
-router.get("/all-files", authenticate, getAllFiles);
-router.get("/all-personal-details", authenticate, getAllPersonalDetails);
+// Individual stats (optional, can keep them)
+router.get("/files-uploaded", authenticate, getTotalFiles);
+router.get("/personal-details", authenticate, getTotalPersonalDetails);
 
 export default router;

@@ -46,7 +46,7 @@ const handleSubmit = async (e) => {
 
     setTimeout(() => {
   if (me.data.role === "admin") {
-    navigate("/admin"); // Go to admin page
+    navigate("/admin-dashboard"); // Go to admin page
   } else {
     navigate("/"); // Go to dashboard
   }

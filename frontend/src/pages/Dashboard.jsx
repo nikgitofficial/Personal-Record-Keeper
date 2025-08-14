@@ -550,9 +550,16 @@ const Dashboard = ({ children }) => {
           }}
         >
           <Box mb={4} width="100%">
-            <Typography variant="h5" gutterBottom fontWeight={700} letterSpacing={0.5}>
-              Government ID Cards
-            </Typography>
+            <Typography
+  variant="h5"
+  gutterBottom
+  fontWeight={700}
+  letterSpacing={0.5}
+  align="center" // centers text horizontally
+  sx={{ display: "block", textAlign: "center" }} // ensures centering across layouts
+>
+  Government ID Cards
+</Typography>
 
             {loading ? (
               <Box display="flex" justifyContent="center" my={4}>

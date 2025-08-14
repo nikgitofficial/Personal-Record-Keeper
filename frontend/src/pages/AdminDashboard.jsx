@@ -77,10 +77,11 @@ export default function AdminPage() {
       try {
         setLoadingStats(true);
         const [userRes, filesRes, detailsRes] = await Promise.all([
-          api.get("/auth/user-count", { headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` } }),
-          api.get("/admin-stats/files-uploaded", { headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` } }),
-          api.get("/admin-stats/personal-details", { headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` } }),
-        ]);
+  api.get("/auth/user-count", { headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` } }),
+  api.get("/admin-stats/files-uploaded", { headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` } }),
+  api.get("/admin-stats/personal-details", { headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` } }),
+]);
+
         setTotalUsers(userRes.data.totalUsers);
         setTotalFiles(filesRes.data.totalFiles);
         setTotalDetails(detailsRes.data.totalDetails);

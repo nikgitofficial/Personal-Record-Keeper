@@ -13,6 +13,9 @@ import Preview from './pages/Preview';
 import ForgotPassword from './pages/ForgotPassword';
 import Settings from "./pages/Settings";
 
+import AdminRoute from "./components/AdminRoute";
+import AdminPage from "./pages/AdminPage";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const App = () => {
   const { user } = useContext(AuthContext);
@@ -31,6 +34,11 @@ const App = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/settings" element={<Dashboard><Settings /></Dashboard>} />
+
+        <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
+        <Route path="/admin-dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+
+
       </Routes>
     </BrowserRouter>
   );

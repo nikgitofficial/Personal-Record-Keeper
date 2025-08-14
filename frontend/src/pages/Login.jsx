@@ -45,8 +45,12 @@ const handleSubmit = async (e) => {
     setSnackbarOpen(true); // Show success snackbar
 
     setTimeout(() => {
-      navigate("/"); // Navigate after brief delay
-    }, 1000);
+  if (me.data.role === "admin") {
+    navigate("/admin"); // Go to admin page
+  } else {
+    navigate("/"); // Go to dashboard
+  }
+}, 1000);
   } catch (err) {
     setError(err.response?.data?.msg || "Login failed");
 

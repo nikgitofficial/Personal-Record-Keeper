@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import { Alert } from "@mui/material";
 import {
   AppBar,
   Avatar,
@@ -535,6 +536,21 @@ export default function AdminPage() {
         message="Logged out successfully"
         onClose={() => setLogoutSnackbarOpen(false)}
       />
+      <Snackbar
+  open={logoutSnackbarOpen}
+  autoHideDuration={1500}
+  onClose={() => setLogoutSnackbarOpen(false)}
+  anchorOrigin={{ vertical: "top", horizontal: "right" }}
+>
+  <Alert
+    onClose={() => setLogoutSnackbarOpen(false)}
+    severity="success"
+    sx={{ width: "100%" }}
+    variant="filled"
+  >
+    Logged out successfully!
+  </Alert>
+</Snackbar>
     </Box>
   );
 }

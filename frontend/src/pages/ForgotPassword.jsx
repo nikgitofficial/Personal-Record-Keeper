@@ -126,130 +126,134 @@ const ForgotPassword = () => {
   return (
     <Container maxWidth="sm">
       <Card elevation={3} sx={{ mt: 6, p: 2 }}>
-        <CardContent>
-          <Typography variant="h5" fontWeight={600} gutterBottom>
-            Forgot Password
-          </Typography>
+     <CardContent>
+  <Typography variant="h5" fontWeight={600} gutterBottom>
+    Forgot Password
+  </Typography>
 
-          {step === 1 && (
-            <>
-              <TextField
-                label="Email Address"
-                fullWidth
-                type="email"
-                margin="normal"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <Button
-                fullWidth
-                variant="contained"
-                onClick={sendOTP}
-                disabled={!email || countdown > 0 || loadingSendOtp}
-                startIcon={loadingSendOtp && <CircularProgress size={20} />}
+  {step === 1 && (
+    <>
+      <TextField
+        label="Email Address"
+        fullWidth
+        type="email"
+        margin="normal"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+      <Button
+        fullWidth
+        variant="contained"
+        onClick={sendOTP}
+        disabled={!email || countdown > 0 || loadingSendOtp}
+        startIcon={loadingSendOtp && <CircularProgress size={20} />}
+      >
+        {countdown > 0
+          ? `Resend OTP in ${countdown}s`
+          : "Send OTP"}
+      </Button>
+    </>
+  )}
+
+  {step === 2 && (
+    <>
+      <TextField
+        label="OTP Code"
+        fullWidth
+        margin="normal"
+        value={otp}
+        onChange={(e) => setOtp(e.target.value)}
+      />
+      <TextField
+        label="New Password"
+        fullWidth
+        margin="normal"
+        type={showPassword ? "text" : "password"}
+        value={newPassword}
+        onChange={(e) => setNewPassword(e.target.value)}
+        InputProps={{
+          endAdornment: (
+            <InputAdornment position="end">
+              <IconButton
+                onClick={() =>
+                  setShowPassword((prev) => !prev)
+                }
               >
-                {countdown > 0
-                  ? `Resend OTP in ${countdown}s`
-                  : "Send OTP"}
-              </Button>
-            </>
-          )}
+                {showPassword ? <VisibilityOff /> : <Visibility />}
+              </IconButton>
+            </InputAdornment>
+          ),
+        }}
+      />
+      {newPassword && (
+        <Box mb={1}>
+          <LinearProgress
+            variant="determinate"
+            value={strengthScore}
+            sx={{ height: 8, borderRadius: 5 }}
+            color={
+              strength.score < 2
+                ? "error"
+                : strength.score < 3
+                ? "warning"
+                : "success"
+            }
+          />
+          <Typography variant="caption" color="text.secondary" mt={1}>
+            Strength: {strengthLabel}
+          </Typography>
+        </Box>
+      )}
 
-          {step === 2 && (
-            <>
-              <TextField
-                label="OTP Code"
-                fullWidth
-                margin="normal"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-              />
-              <TextField
-                label="New Password"
-                fullWidth
-                margin="normal"
-                type={showPassword ? "text" : "password"}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        onClick={() =>
-                          setShowPassword((prev) => !prev)
-                        }
-                      >
-                        {showPassword ? (
-                          <VisibilityOff />
-                        ) : (
-                          <Visibility />
-                        )}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              {newPassword && (
-                <Box mb={1}>
-                  <LinearProgress
-                    variant="determinate"
-                    value={strengthScore}
-                    sx={{ height: 8, borderRadius: 5 }}
-                    color={
-                      strength.score < 2
-                        ? "error"
-                        : strength.score < 3
-                        ? "warning"
-                        : "success"
-                    }
-                  />
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    mt={1}
-                  >
-                    Strength: {strengthLabel}
-                  </Typography>
-                </Box>
-              )}
+      <TextField
+        label="Confirm Password"
+        fullWidth
+        margin="normal"
+        type={showPassword ? "text" : "password"}
+        value={confirmPassword}
+        onChange={(e) => setConfirmPassword(e.target.value)}
+      />
+      {!isPasswordMatch && confirmPassword && (
+        <Typography variant="caption" color="error">
+          Passwords do not match
+        </Typography>
+      )}
 
-              <TextField
-                label="Confirm Password"
-                fullWidth
-                margin="normal"
-                type={showPassword ? "text" : "password"}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
-              {!isPasswordMatch && confirmPassword && (
-                <Typography variant="caption" color="error">
-                  Passwords do not match
-                </Typography>
-              )}
+      <Box mt={2}>
+        <Button
+          variant="contained"
+          fullWidth
+          onClick={resetPassword}
+          disabled={
+            !otp ||
+            !newPassword ||
+            !confirmPassword ||
+            !isPasswordMatch ||
+            loadingResetPwd
+          }
+          startIcon={loadingResetPwd && <CircularProgress size={20} />}
+        >
+          Reset Password
+        </Button>
+      </Box>
+      <Button onClick={() => setStep(1)} sx={{ mt: 1 }}>
+        Back
+      </Button>
+    </>
+  )}
 
-              <Box mt={2}>
-                <Button
-                  variant="contained"
-                  fullWidth
-                  onClick={resetPassword}
-                  disabled={
-                    !otp ||
-                    !newPassword ||
-                    !confirmPassword ||
-                    !isPasswordMatch ||
-                    loadingResetPwd
-                  }
-                  startIcon={loadingResetPwd && <CircularProgress size={20} />}
-                >
-                  Reset Password
-                </Button>
-              </Box>
-              <Button onClick={() => setStep(1)} sx={{ mt: 1 }}>
-                Back
-              </Button>
-            </>
-          )}
-        </CardContent>
+  {/* Back to Login button for both steps */}
+  <Button
+    fullWidth
+    variant="text"
+    color="primary"
+    sx={{ mt: 2 }}
+    onClick={() => navigate("/login")}
+  >
+    Back to Login
+  </Button>
+</CardContent>
+
       </Card>
 
       <Snackbar

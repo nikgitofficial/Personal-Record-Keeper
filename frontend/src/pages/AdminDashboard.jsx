@@ -26,6 +26,7 @@ import {
   ListItemText,
   Divider,
   Tooltip,
+  TextField,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import {
@@ -69,6 +70,9 @@ export default function AdminPage() {
   const [logoutSnackbarOpen, setLogoutSnackbarOpen] = useState(false);
 
   const [darkMode, setDarkMode] = useState(false);
+
+  // New state for search/filter
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
 
@@ -116,6 +120,7 @@ export default function AdminPage() {
 
   const handleManageUsers = () => {
     setView("users");
+    setSearchQuery("");
     fetchAllUsers();
   };
 
@@ -149,11 +154,13 @@ export default function AdminPage() {
 
   const handleManageFiles = () => {
     setView("files");
+    setSearchQuery("");
     fetchAllFiles();
   };
 
   const handleManagePersonalDetails = () => {
     setView("details");
+    setSearchQuery("");
     fetchAllPersonalDetailsList();
   };
 
@@ -235,6 +242,37 @@ export default function AdminPage() {
       </List>
     </Box>
   );
+
+  // Function to filter data based on searchQuery
+  const filterData = (data) => {
+    if (!searchQuery) return data;
+
+    const q = searchQuery.toLowerCase();
+    return data.filter((item) => {
+      if (view === "users") {
+        return (
+          item.username.toLowerCase().includes(q) ||
+          item.email.toLowerCase().includes(q) ||
+          item.role.toLowerCase().includes(q)
+        );
+      } else if (view === "files") {
+        return (
+          item.originalName.toLowerCase().includes(q) ||
+          (item.description?.toLowerCase() || "").includes(q) ||
+          (item.uploadedBy?.username?.toLowerCase() || "").includes(q)
+        );
+      } else if (view === "details") {
+        return (
+          item.fullName.toLowerCase().includes(q) ||
+          item.birthdate.toLowerCase().includes(q) ||
+          item.address.toLowerCase().includes(q) ||
+          (item.phoneNumber?.toLowerCase() || "").includes(q) ||
+          (item.email?.toLowerCase() || "").includes(q)
+        );
+      }
+      return false;
+    });
+  };
 
   return (
     <Box sx={{ display: "flex", backgroundColor: darkMode ? "#121212" : theme.palette.grey[50], minHeight: "100vh" }}>
@@ -391,6 +429,16 @@ export default function AdminPage() {
                   ? "All Files"
                   : "All Personal Details"}
               </Typography>
+
+              {/* Search Input */}
+              <TextField
+                size="small"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                sx={{ minWidth: 200 }}
+              />
+
               <Button variant="outlined" onClick={() => setView("stats")}>
                 Back to Dashboard
               </Button>
@@ -440,33 +488,39 @@ export default function AdminPage() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {view === "users"
-                      ? users.map((u) => (
-                          <TableRow key={u._id} sx={{ "&:hover": { backgroundColor: theme.palette.action.hover } }}>
-                            <TableCell>{u.username}</TableCell>
-                            <TableCell>{u.email}</TableCell>
-                            <TableCell>{u.role}</TableCell>
-                            <TableCell>{new Date(u.createdAt).toLocaleDateString()}</TableCell>
-                          </TableRow>
-                        ))
-                      : view === "files"
-                      ? files.map((f) => (
-                          <TableRow key={f._id} sx={{ "&:hover": { backgroundColor: theme.palette.action.hover } }}>
-                            <TableCell>{f.originalName}</TableCell>
-                            <TableCell>{f.description || "-"}</TableCell>
-                            <TableCell>{f.uploadedBy?.username || "-"}</TableCell>
-                            <TableCell>{new Date(f.createdAt).toLocaleString()}</TableCell>
-                          </TableRow>
-                        ))
-                      : personalDetails.map((d) => (
-                          <TableRow key={d._id} sx={{ "&:hover": { backgroundColor: theme.palette.action.hover } }}>
-                            <TableCell>{d.fullName}</TableCell>
-                            <TableCell>{d.birthdate}</TableCell>
-                            <TableCell>{d.address}</TableCell>
-                            <TableCell>{d.phoneNumber || "-"}</TableCell>
-                            <TableCell>{d.email || "-"}</TableCell>
-                          </TableRow>
-                        ))}
+                    {filterData(view === "users" ? users : view === "files" ? files : personalDetails).map(
+                      (item) => {
+                        if (view === "users") {
+                          return (
+                            <TableRow key={item._id} sx={{ "&:hover": { backgroundColor: theme.palette.action.hover } }}>
+                              <TableCell>{item.username}</TableCell>
+                              <TableCell>{item.email}</TableCell>
+                              <TableCell>{item.role}</TableCell>
+                              <TableCell>{new Date(item.createdAt).toLocaleDateString()}</TableCell>
+                            </TableRow>
+                          );
+                        } else if (view === "files") {
+                          return (
+                            <TableRow key={item._id} sx={{ "&:hover": { backgroundColor: theme.palette.action.hover } }}>
+                              <TableCell>{item.originalName}</TableCell>
+                              <TableCell>{item.description || "-"}</TableCell>
+                              <TableCell>{item.uploadedBy?.username || "-"}</TableCell>
+                              <TableCell>{new Date(item.createdAt).toLocaleString()}</TableCell>
+                            </TableRow>
+                          );
+                        } else {
+                          return (
+                            <TableRow key={item._id} sx={{ "&:hover": { backgroundColor: theme.palette.action.hover } }}>
+                              <TableCell>{item.fullName}</TableCell>
+                              <TableCell>{item.birthdate}</TableCell>
+                              <TableCell>{item.address}</TableCell>
+                              <TableCell>{item.phoneNumber || "-"}</TableCell>
+                              <TableCell>{item.email || "-"}</TableCell>
+                            </TableRow>
+                          );
+                        }
+                      }
+                    )}
                   </TableBody>
                 </Table>
               </TableContainer>

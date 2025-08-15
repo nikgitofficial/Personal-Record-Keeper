@@ -10,7 +10,7 @@ router.get("/dashboard-stats", authenticate, getDashboardStats);
 // Individual stats (optional, can keep them)
 router.get("/files-uploaded", authenticate, getTotalFiles);
 router.get("/personal-details", authenticate, getTotalPersonalDetails);
-router.get("/files-list", authenticate, adminOnly, getAllFiles);
-router.get("/personal-details-list", authenticate, adminOnly, getAllPersonalDetails);
+router.get("/files-list", authenticate,getAllFiles);
+router.get("/personal-details-list", authenticate, getAllPersonalDetails);
 
 export default router;

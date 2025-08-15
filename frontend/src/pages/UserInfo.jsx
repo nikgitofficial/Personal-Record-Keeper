@@ -1,88 +1,139 @@
 // frontend/src/pages/UserInfo.jsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { CircularProgress, Snackbar, Alert, TextField, Button, Box, Typography, Paper } from "@mui/material";
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 const UserInfo = () => {
   const [user, setUser] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [newUsername, setNewUsername] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
   // Fetch current user info
- useEffect(() => {
-  axios
-    .get("http://localhost:5000/api/auth/me", {
-      headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
-    })
-    .then((res) => {
-      setUser(res.data);
-      setNewUsername(res.data.username);
-    })
-    .catch((err) => console.error("Error fetching user:", err.response?.data || err.message));
-}, []);
-
+  useEffect(() => {
+    setLoading(true);
+    axios
+      .get(`${API_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
+      })
+      .then((res) => {
+        setUser(res.data);
+        setNewUsername(res.data.username);
+      })
+      .catch((err) => {
+        console.error("Error fetching user:", err.response?.data || err.message);
+        setSnackbar({ open: true, message: "Failed to load user info", severity: "error" });
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   // Handle username update
   const handleSave = () => {
+    if (!newUsername.trim() || newUsername.length < 3) {
+      setSnackbar({ open: true, message: "Username must be at least 3 characters", severity: "warning" });
+      return;
+    }
+
+    setLoading(true);
     axios
       .patch(
-        "/api/auth/update-username",
-        { username: newUsername },
+        `${API_URL}/auth/update-username`,
+        { username: newUsername.trim() },
         { headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` } }
       )
       .then((res) => {
         setUser(res.data.user);
         setEditMode(false);
+        setSnackbar({ open: true, message: "Username updated successfully", severity: "success" });
       })
-      .catch((err) => console.error(err));
+      .catch((err) => {
+        console.error("Error updating username:", err.response?.data || err.message);
+        setSnackbar({ open: true, message: "Failed to update username", severity: "error" });
+      })
+      .finally(() => setLoading(false));
   };
 
-  if (!user) return <p>Loading...</p>;
+  if (loading && !user) {
+    return <CircularProgress style={{ display: "block", margin: "50px auto" }} />;
+  }
 
   return (
-    <div
-      style={{
-        maxWidth: "400px",
-        margin: "50px auto",
-        padding: "20px",
-        border: "1px solid #ccc",
-        borderRadius: "8px",
-        backgroundColor: "#fff",
-      }}
+    <Paper
+      elevation={3}
+      sx={{ maxWidth: 400, margin: "50px auto", padding: 3, backgroundColor: "#fff" }}
     >
-      <h2 style={{ textAlign: "center" }}>User Info</h2>
+      <Typography variant="h5" align="center" gutterBottom>
+        User Info
+      </Typography>
 
-      <div style={{ marginBottom: "15px" }}>
-        <strong>Email:</strong>
-        <p>{user.email}</p>
-      </div>
+      <Box mb={2}>
+        <Typography variant="subtitle1">Email:</Typography>
+        <Typography variant="body1">{user?.email}</Typography>
+      </Box>
 
-      <div style={{ marginBottom: "15px" }}>
-        <strong>Username:</strong>
+      <Box mb={2}>
+        <Typography variant="subtitle1">Username:</Typography>
         {editMode ? (
           <>
-            <input
-              type="text"
+            <TextField
+              fullWidth
               value={newUsername}
               onChange={(e) => setNewUsername(e.target.value)}
-              style={{ width: "100%", padding: "5px" }}
+              disabled={loading}
+              variant="outlined"
+              size="small"
             />
-            <button onClick={handleSave} style={{ marginTop: "5px" }}>
-              Save
-            </button>
-            <button onClick={() => setEditMode(false)} style={{ marginTop: "5px", marginLeft: "5px" }}>
-              Cancel
-            </button>
+            <Box mt={1}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleSave}
+                disabled={loading}
+              >
+                {loading ? "Saving..." : "Save"}
+              </Button>
+              <Button
+                variant="outlined"
+                color="secondary"
+                onClick={() => {
+                  setEditMode(false);
+                  setNewUsername(user.username);
+                }}
+                sx={{ ml: 1 }}
+                disabled={loading}
+              >
+                Cancel
+              </Button>
+            </Box>
           </>
         ) : (
-          <p>
-            {user.username}{" "}
-            <button onClick={() => setEditMode(true)} style={{ marginLeft: "10px" }}>
+          <Box display="flex" alignItems="center">
+            <Typography variant="body1">{user?.username}</Typography>
+            <Button variant="text" onClick={() => setEditMode(true)} sx={{ ml: 1 }}>
               Edit
-            </button>
-          </p>
+            </Button>
+          </Box>
         )}
-      </div>
-    </div>
+      </Box>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          variant="filled"
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Paper>
   );
 };
 

@@ -30,6 +30,7 @@ import DialogContent from "@mui/material/DialogContent";
 import CloseIcon from "@mui/icons-material/Close";
 import DialogTitle from "@mui/material/DialogTitle";
 import Dialog from "@mui/material/Dialog";
+import PersonIcon from "@mui/icons-material/Person";
 import {
   Menu as MenuIcon,
   Logout as LogoutIcon,
@@ -311,6 +312,16 @@ const Dashboard = ({ children }) => {
         </ListItemIcon>
         <ListItemText primary="Manage Cards" />
       </ListItemButton>
+      <ListItemButton
+  component={Link}
+  to="/user-info"
+  selected={location.pathname === "/user-info"}
+>
+  <ListItemIcon>
+    <PersonIcon sx={{ color: "secondary.main" }} />
+  </ListItemIcon>
+  <ListItemText primary="User Info" />
+</ListItemButton>
     </List>
   </Collapse>
 

@@ -12,6 +12,7 @@ import About from "./pages/About";
 import Preview from './pages/Preview';
 import ForgotPassword from './pages/ForgotPassword';
 import Settings from "./pages/Settings";
+import UserInfo from "./pages/UserInfo";
 
 import AdminRoute from "./components/AdminRoute";
 import AdminPage from "./pages/AdminPage";
@@ -34,6 +35,7 @@ const App = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/settings" element={<Dashboard><Settings /></Dashboard>} />
+        <Route path="/user-info" element={<Dashboard><UserInfo /></Dashboard>} />
 
         <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
         <Route path="/admin-dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />

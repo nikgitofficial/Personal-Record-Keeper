@@ -1,31 +1,44 @@
 // frontend/src/pages/UserInfo.jsx
 import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { CircularProgress, Snackbar, Alert, TextField, Button, Box, Typography, Paper } from "@mui/material";
-
-const API_URL = import.meta.env.VITE_API_URL;
+import axios from "../api/axios"; // ✅ use custom axios instance
+import {
+  CircularProgress,
+  Snackbar,
+  Alert,
+  TextField,
+  Button,
+  Box,
+  Typography,
+  Paper,
+} from "@mui/material";
 
 const UserInfo = () => {
   const [user, setUser] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [newUsername, setNewUsername] = useState("");
   const [loading, setLoading] = useState(false);
-  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
 
   // Fetch current user info
   useEffect(() => {
     setLoading(true);
     axios
-      .get(`${API_URL}/auth/me`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
-      })
+      .get("/auth/me") // ✅ no need for full URL or manual headers
       .then((res) => {
         setUser(res.data);
         setNewUsername(res.data.username);
       })
       .catch((err) => {
         console.error("Error fetching user:", err.response?.data || err.message);
-        setSnackbar({ open: true, message: "Failed to load user info", severity: "error" });
+        setSnackbar({
+          open: true,
+          message: "Failed to load user info",
+          severity: "error",
+        });
       })
       .finally(() => setLoading(false));
   }, []);
@@ -33,25 +46,33 @@ const UserInfo = () => {
   // Handle username update
   const handleSave = () => {
     if (!newUsername.trim() || newUsername.length < 3) {
-      setSnackbar({ open: true, message: "Username must be at least 3 characters", severity: "warning" });
+      setSnackbar({
+        open: true,
+        message: "Username must be at least 3 characters",
+        severity: "warning",
+      });
       return;
     }
 
     setLoading(true);
     axios
-      .patch(
-        `${API_URL}/auth/update-username`,
-        { username: newUsername.trim() },
-        { headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` } }
-      )
+      .patch("/auth/update-username", { username: newUsername.trim() })
       .then((res) => {
         setUser(res.data.user);
         setEditMode(false);
-        setSnackbar({ open: true, message: "Username updated successfully", severity: "success" });
+        setSnackbar({
+          open: true,
+          message: "Username updated successfully",
+          severity: "success",
+        });
       })
       .catch((err) => {
         console.error("Error updating username:", err.response?.data || err.message);
-        setSnackbar({ open: true, message: "Failed to update username", severity: "error" });
+        setSnackbar({
+          open: true,
+          message: "Failed to update username",
+          severity: "error",
+        });
       })
       .finally(() => setLoading(false));
   };
@@ -63,7 +84,12 @@ const UserInfo = () => {
   return (
     <Paper
       elevation={3}
-      sx={{ maxWidth: 400, margin: "50px auto", padding: 3, backgroundColor: "#fff" }}
+      sx={{
+        maxWidth: 400,
+        margin: "50px auto",
+        padding: 3,
+        backgroundColor: "#fff",
+      }}
     >
       <Typography variant="h5" align="center" gutterBottom>
         User Info
@@ -112,7 +138,11 @@ const UserInfo = () => {
         ) : (
           <Box display="flex" alignItems="center">
             <Typography variant="body1">{user?.username}</Typography>
-            <Button variant="text" onClick={() => setEditMode(true)} sx={{ ml: 1 }}>
+            <Button
+              variant="text"
+              onClick={() => setEditMode(true)}
+              sx={{ ml: 1 }}
+            >
               Edit
             </Button>
           </Box>

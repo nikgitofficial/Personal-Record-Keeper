@@ -8,17 +8,18 @@ const UserInfo = () => {
   const [newUsername, setNewUsername] = useState("");
 
   // Fetch current user info
-  useEffect(() => {
-    axios
-      .get("/api/auth/me", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
-      })
-      .then((res) => {
-        setUser(res.data);
-        setNewUsername(res.data.username);
-      })
-      .catch((err) => console.error(err));
-  }, []);
+ useEffect(() => {
+  axios
+    .get("http://localhost:5000/api/auth/me", {
+      headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
+    })
+    .then((res) => {
+      setUser(res.data);
+      setNewUsername(res.data.username);
+    })
+    .catch((err) => console.error("Error fetching user:", err.response?.data || err.message));
+}, []);
+
 
   // Handle username update
   const handleSave = () => {

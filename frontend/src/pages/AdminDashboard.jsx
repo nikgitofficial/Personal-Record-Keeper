@@ -1,6 +1,5 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useMemo, useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import { Alert } from "@mui/material";
 import {
   AppBar,
   Avatar,
@@ -9,7 +8,6 @@ import {
   IconButton,
   Box,
   Button,
-  Grid,
   Paper,
   CircularProgress,
   Table,
@@ -28,8 +26,13 @@ import {
   Divider,
   Tooltip,
   TextField,
+  Alert,
+  Skeleton,
+  Chip,
+  Stack,
 } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
+import { useTheme, alpha } from "@mui/material/styles";
+import useMediaQuery from "@mui/material/useMediaQuery";
 import {
   AccountCircle,
   Notifications,
@@ -37,6 +40,10 @@ import {
   Dashboard as DashboardIcon,
   People as PeopleIcon,
   Menu as MenuIcon,
+  Folder as FolderIcon,
+  Description as DescriptionIcon,
+  Search as SearchIcon,
+  Refresh as RefreshIcon,
 } from "@mui/icons-material";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
@@ -47,35 +54,106 @@ import { AuthContext } from "../context/AuthContext";
 
 const drawerWidth = 260;
 
+// ---- Reusable, lightweight components ----
+const StatCard = ({ title, value, icon: Icon, loading }) => {
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        p: 3,
+        borderRadius: 3,
+        background: (theme) =>
+          `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.08)} 0%, ${alpha(
+            theme.palette.primary.light,
+            0.12
+          )} 100%)`,
+        border: (theme) => `1px solid ${alpha(theme.palette.primary.main, 0.18)}`,
+        boxShadow: (theme) => `0 8px 24px ${alpha(theme.palette.common.black, 0.08)}`,
+        transition: "transform .25s ease, box-shadow .25s ease",
+        '&:hover': {
+          transform: 'translateY(-4px)',
+          boxShadow: (theme) => `0 12px 36px ${alpha(theme.palette.common.black, 0.12)}`,
+        },
+      }}
+    >
+      <Stack direction="row" alignItems="center" spacing={2}>
+        <Box
+          sx={{
+            width: 48,
+            height: 48,
+            borderRadius: 2,
+            display: "grid",
+            placeItems: "center",
+            backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.12),
+          }}
+        >
+          {Icon ? <Icon /> : <DashboardIcon />}
+        </Box>
+        <Box sx={{ flex: 1 }}>
+          <Typography variant="body2" sx={{ opacity: 0.8 }}>
+            {title}
+          </Typography>
+          <Typography variant="h4" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
+            {loading ? <Skeleton width={80} height={38} /> : value ?? "—"}
+          </Typography>
+        </Box>
+      </Stack>
+    </Paper>
+  );
+};
+
+const EmptyState = ({ title = "No data", subtitle = "Try adjusting your search or refresh.", icon: Icon = DescriptionIcon }) => (
+  <Box sx={{ textAlign: "center", py: 8 }}>
+    <Box sx={{ display: "inline-grid", placeItems: "center", width: 80, height: 80, borderRadius: 3, mb: 2, bgcolor: (t) => alpha(t.palette.text.primary, 0.06) }}>
+      <Icon fontSize="large" />
+    </Box>
+    <Typography variant="h6" sx={{ mb: 0.5 }}>{title}</Typography>
+    <Typography variant="body2" color="text.secondary">{subtitle}</Typography>
+  </Box>
+);
+
 export default function AdminPage() {
   const theme = useTheme();
+  const isSm = useMediaQuery(theme.breakpoints.down('sm'));
   const navigate = useNavigate();
   const { user, setUser } = useContext(AuthContext);
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [view, setView] = useState("stats");
 
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Stats
   const [totalUsers, setTotalUsers] = useState(null);
   const [totalFiles, setTotalFiles] = useState(null);
   const [totalDetails, setTotalDetails] = useState(null);
   const [loadingStats, setLoadingStats] = useState(true);
 
+  // Users
+  const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  // Files
   const [files, setFiles] = useState([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
 
+  // Personal details
   const [personalDetails, setPersonalDetails] = useState([]);
   const [loadingDetails, setLoadingDetails] = useState(false);
 
-  const [users, setUsers] = useState([]);
-  const [loadingUsers, setLoadingUsers] = useState(false);
   const [logoutSnackbarOpen, setLogoutSnackbarOpen] = useState(false);
 
+  // Theme toggle (keeps your existing approach)
   const [darkMode, setDarkMode] = useState(false);
 
-  // New state for search/filter
+  // search/filter
   const [searchQuery, setSearchQuery] = useState("");
 
-  const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
+  const handleDrawerToggle = () => setMobileOpen((p) => !p);
 
   const toggleTheme = () => {
     setDarkMode((prev) => !prev);
@@ -119,12 +197,6 @@ export default function AdminPage() {
     }
   };
 
-  const handleManageUsers = () => {
-    setView("users");
-    setSearchQuery("");
-    fetchAllUsers();
-  };
-
   const fetchAllFiles = async () => {
     setLoadingFiles(true);
     try {
@@ -153,12 +225,16 @@ export default function AdminPage() {
     }
   };
 
+  const handleManageUsers = () => {
+    setView("users");
+    setSearchQuery("");
+    fetchAllUsers();
+  };
   const handleManageFiles = () => {
     setView("files");
     setSearchQuery("");
     fetchAllFiles();
   };
-
   const handleManagePersonalDetails = () => {
     setView("details");
     setSearchQuery("");
@@ -171,112 +247,178 @@ export default function AdminPage() {
       localStorage.removeItem("accessToken");
       setUser(null);
       setLogoutSnackbarOpen(true);
-      setTimeout(() => navigate("/login"), 1500);
+      setTimeout(() => navigate("/login"), 1200);
     } catch (err) {
       console.error("Logout error:", err.response?.data || err.message);
     }
   };
 
+  // Filter helper
+  const filteredRows = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return view === "users" ? users : view === "files" ? files : personalDetails;
+
+    const source = view === "users" ? users : view === "files" ? files : personalDetails;
+
+    return source.filter((item) => {
+      if (view === "users") {
+        return (
+          item.username?.toLowerCase().includes(q) ||
+          item.email?.toLowerCase().includes(q) ||
+          item.role?.toLowerCase().includes(q)
+        );
+      }
+      if (view === "files") {
+        return (
+          item.originalName?.toLowerCase().includes(q) ||
+          item.description?.toLowerCase().includes(q) ||
+          item.uploadedBy?.username?.toLowerCase().includes(q)
+        );
+      }
+      // details
+      return (
+        item.fullName?.toLowerCase().includes(q) ||
+        item.birthdate?.toLowerCase().includes(q) ||
+        item.address?.toLowerCase().includes(q) ||
+        item.phoneNumber?.toLowerCase?.().includes(q) ||
+        item.email?.toLowerCase?.().includes(q)
+      );
+    });
+  }, [searchQuery, users, files, personalDetails, view]);
+
+  // Drawer content
   const drawer = (
-    <Box sx={{ pt: { xs: 8, sm: 8 }, display: "flex", flexDirection: "column", alignItems: "center" }}>
-      <IconButton
-        onClick={handleOpenProfile}
-        sx={{
-          p: 0,
-          borderRadius: "50%",
-          overflow: "hidden",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          transition: "transform 0.2s, box-shadow 0.2s",
-          "&:hover": {
-            transform: "scale(1.1)",
-            boxShadow: "0 6px 20px rgba(0,0,0,0.2)",
-            bgcolor: "action.hover",
-          },
-        }}
-      >
-        <Avatar
-          src={user?.profilePic || ""}
-          alt={user?.username}
-          sx={{ width: { xs: 64, sm: 80 }, height: { xs: 64, sm: 80 }, fontSize: { xs: 24, sm: 32 }, bgcolor: "primary.main" }}
+    <Box sx={{ pt: { xs: 8, sm: 8 }, display: "flex", flexDirection: "column", height: 1 }}>
+      <Box sx={{ display: "grid", placeItems: "center" }}>
+        <IconButton
+          onClick={handleOpenProfile}
+          sx={{
+            p: 0,
+            borderRadius: "50%",
+            overflow: "hidden",
+            border: (t) => `2px solid ${alpha(t.palette.primary.main, 0.2)}`,
+            transition: "transform 0.2s, box-shadow 0.2s",
+            '&:hover': {
+              transform: 'scale(1.04)',
+              boxShadow: (t) => `0 10px 24px ${alpha(t.palette.common.black, 0.15)}`,
+            },
+          }}
         >
-          {!user?.profilePic && (user?.username?.[0]?.toUpperCase() || "U")}
-        </Avatar>
-      </IconButton>
+          <Avatar
+            src={user?.profilePic || ""}
+            alt={user?.username}
+            sx={{ width: 80, height: 80, bgcolor: "primary.main", fontSize: 32 }}
+          >
+            {!user?.profilePic && (user?.username?.[0]?.toUpperCase() || "U")}
+          </Avatar>
+        </IconButton>
+        <Typography variant="h6" fontWeight={800} sx={{ mt: 1, textAlign: "center" }}>
+          {user?.username || "Admin"}
+        </Typography>
+        <Chip label="Administrator" size="small" sx={{ mt: 0.5 }} />
+      </Box>
 
-      <Typography variant="h6" fontWeight="bold" sx={{ color: "#1976d2", mt: 1, textAlign: "center" }}>
-        {user?.username || "Admin"}
-      </Typography>
+      <Divider sx={{ my: 2 }} />
 
-      <Divider sx={{ width: "90%", my: 2 }} />
-
-      <List sx={{ width: "100%" }}>
+      <List sx={{ px: 1 }}>
         <ListItem
           onClick={() => setView("stats")}
-          sx={{
-            borderRadius: 1,
-            "&:hover": { backgroundColor: theme.palette.action.hover },
-            cursor: "pointer",
-            transition: "background 0.2s",
-          }}
+          sx={{ borderRadius: 1.5, '&:hover': { backgroundColor: (t) => t.palette.action.hover }, cursor: 'pointer' }}
         >
-          <ListItemIcon>
-            <DashboardIcon color="primary" />
-          </ListItemIcon>
+          <ListItemIcon><DashboardIcon color="primary" /></ListItemIcon>
           <ListItemText primary="Dashboard" />
         </ListItem>
+
         <ListItem
           onClick={handleManageUsers}
-          sx={{
-            borderRadius: 1,
-            "&:hover": { backgroundColor: theme.palette.action.hover },
-            cursor: "pointer",
-            transition: "background 0.2s",
-          }}
+          sx={{ borderRadius: 1.5, '&:hover': { backgroundColor: (t) => t.palette.action.hover }, cursor: 'pointer' }}
         >
-          <ListItemIcon>
-            <PeopleIcon color="primary" />
-          </ListItemIcon>
+          <ListItemIcon><PeopleIcon color="primary" /></ListItemIcon>
           <ListItemText primary="Users" />
         </ListItem>
+
+        <ListItem
+          onClick={handleManageFiles}
+          sx={{ borderRadius: 1.5, '&:hover': { backgroundColor: (t) => t.palette.action.hover }, cursor: 'pointer' }}
+        >
+          <ListItemIcon><FolderIcon color="primary" /></ListItemIcon>
+          <ListItemText primary="Files" />
+        </ListItem>
+
+        <ListItem
+          onClick={handleManagePersonalDetails}
+          sx={{ borderRadius: 1.5, '&:hover': { backgroundColor: (t) => t.palette.action.hover }, cursor: 'pointer' }}
+        >
+          <ListItemIcon><DescriptionIcon color="primary" /></ListItemIcon>
+          <ListItemText primary="Personal Details" />
+        </ListItem>
       </List>
+
+      <Box sx={{ flexGrow: 1 }} />
+
+      <Divider sx={{ my: 1 }} />
+      <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', pb: 2 }}>
+        <Tooltip title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"} arrow>
+          <IconButton color="inherit" onClick={toggleTheme}>
+            {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Settings" arrow>
+          <IconButton color="inherit">
+            <Settings />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Logout" arrow>
+          <IconButton color="inherit" onClick={handleLogout}>
+            <LogoutIcon />
+          </IconButton>
+        </Tooltip>
+      </Box>
     </Box>
   );
 
-  // Function to filter data based on searchQuery
-  const filterData = (data) => {
-    if (!searchQuery) return data;
-
-    const q = searchQuery.toLowerCase();
-    return data.filter((item) => {
-      if (view === "users") {
-        return (
-          item.username.toLowerCase().includes(q) ||
-          item.email.toLowerCase().includes(q) ||
-          item.role.toLowerCase().includes(q)
-        );
-      } else if (view === "files") {
-        return (
-          item.originalName.toLowerCase().includes(q) ||
-          (item.description?.toLowerCase() || "").includes(q) ||
-          (item.uploadedBy?.username?.toLowerCase() || "").includes(q)
-        );
-      } else if (view === "details") {
-        return (
-          item.fullName.toLowerCase().includes(q) ||
-          item.birthdate.toLowerCase().includes(q) ||
-          item.address.toLowerCase().includes(q) ||
-          (item.phoneNumber?.toLowerCase() || "").includes(q) ||
-          (item.email?.toLowerCase() || "").includes(q)
-        );
-      }
-      return false;
-    });
-  };
+  // Column configs for the table
+  const tableConfig = useMemo(() => {
+    if (view === 'users') {
+      return {
+        loading: loadingUsers,
+        rows: filteredRows,
+        columns: [
+          { key: 'username', label: 'Username' },
+          { key: 'email', label: 'Email' },
+          { key: 'role', label: 'Role' },
+          { key: 'createdAt', label: 'Created At', render: (v) => new Date(v).toLocaleDateString() },
+        ],
+      };
+    }
+    if (view === 'files') {
+      return {
+        loading: loadingFiles,
+        rows: filteredRows,
+        columns: [
+          { key: 'originalName', label: 'File Name' },
+          { key: 'description', label: 'Description', render: (v) => v || '-' },
+          { key: 'uploadedBy', label: 'Uploaded By', render: (v) => v?.username || '-' },
+          { key: 'createdAt', label: 'Uploaded At', render: (v) => new Date(v).toLocaleString() },
+        ],
+      };
+    }
+    // details
+    return {
+      loading: loadingDetails,
+      rows: filteredRows,
+      columns: [
+        { key: 'fullName', label: 'Full Name' },
+        { key: 'birthdate', label: 'Birthdate' },
+        { key: 'address', label: 'Address' },
+        { key: 'phoneNumber', label: 'Phone' },
+        { key: 'email', label: 'Email' },
+      ],
+    };
+  }, [view, filteredRows, loadingUsers, loadingFiles, loadingDetails]);
 
   return (
-    <Box sx={{ display: "flex", backgroundColor: darkMode ? "#121212" : theme.palette.grey[50], minHeight: "100vh" }}>
+    <Box sx={{ display: "flex", backgroundColor: darkMode ? "#0e0e12" : theme.palette.grey[50], minHeight: "100vh" }}>
       <CssBaseline />
 
       {/* AppBar */}
@@ -284,48 +426,31 @@ export default function AdminPage() {
         position="fixed"
         sx={{
           zIndex: theme.zIndex.drawer + 1,
-          background: "linear-gradient(90deg, #1e3c72, #2a5298)",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+          background: (t) => `linear-gradient(90deg, ${t.palette.primary.main}, ${t.palette.primary.dark})`,
+          boxShadow: (t) => `0 4px 12px ${alpha(t.palette.common.black, 0.18)}`,
         }}
       >
-        <Toolbar sx={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap" }}>
-          <Box sx={{ display: "flex", alignItems: "center" }}>
-            <IconButton color="inherit" edge="start" onClick={handleDrawerToggle} sx={{ mr: 2, display: { sm: "none" } }}>
+        <Toolbar sx={{ display: "flex", justifyContent: "space-between", gap: 1, flexWrap: "wrap" }}>
+          <Box sx={{ display: "flex", alignItems: "center", minWidth: 0 }}>
+            <IconButton color="inherit" edge="start" onClick={handleDrawerToggle} sx={{ mr: 1, display: { sm: "none" } }}>
               <MenuIcon />
             </IconButton>
-            <Box component="img" src="/favicon.ico" alt="Admin Logo" sx={{ width: 32, height: 32, mr: 1 }} />
-            <Typography variant="h6" sx={{ fontWeight: "bold" }} noWrap>
+            <Box component="img" src="/favicon.ico" alt="Admin Logo" sx={{ width: 28, height: 28, mr: 1, borderRadius: 1 }} />
+            <Typography variant="h6" sx={{ fontWeight: 800 }} noWrap>
               Admin Dashboard
             </Typography>
           </Box>
 
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-            <Typography variant="body2" sx={{ whiteSpace: "nowrap", color: "rgba(255,255,255,0.8)" }}>
-              {new Date().toLocaleString()}
-            </Typography>
-            <Tooltip title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"} arrow>
-              <IconButton color="inherit" onClick={toggleTheme}>
-                {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
-              </IconButton>
-            </Tooltip>
+            <Chip size="small" label={now.toLocaleString()} sx={{ bgcolor: alpha('#fff', 0.15), color: '#fff' }} />
             <Tooltip title="Notifications" arrow>
               <IconButton color="inherit">
                 <Notifications />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Settings" arrow>
-              <IconButton color="inherit">
-                <Settings />
-              </IconButton>
-            </Tooltip>
             <Tooltip title="Account" arrow>
               <IconButton color="inherit">
                 <AccountCircle />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Logout" arrow>
-              <IconButton color="inherit" onClick={handleLogout}>
-                <LogoutIcon />
               </IconButton>
             </Tooltip>
           </Box>
@@ -335,10 +460,7 @@ export default function AdminPage() {
       {/* Drawer */}
       <Drawer
         variant="permanent"
-        sx={{
-          display: { xs: "none", sm: "block" },
-          "& .MuiDrawer-paper": { width: drawerWidth, borderRight: "1px solid rgba(0,0,0,0.05)" },
-        }}
+        sx={{ display: { xs: "none", sm: "block" }, '& .MuiDrawer-paper': { width: drawerWidth, borderRight: `1px solid ${alpha('#000', 0.06)}` } }}
         open
       >
         {drawer}
@@ -348,7 +470,7 @@ export default function AdminPage() {
         open={mobileOpen}
         onClose={handleDrawerToggle}
         ModalProps={{ keepMounted: true }}
-        sx={{ display: { xs: "block", sm: "none" }, "& .MuiDrawer-paper": { width: drawerWidth } }}
+        sx={{ display: { xs: "block", sm: "none" }, '& .MuiDrawer-paper': { width: drawerWidth } }}
       >
         {drawer}
       </Drawer>
@@ -358,7 +480,8 @@ export default function AdminPage() {
         component="main"
         sx={{
           flexGrow: 1,
-          p: { xs: 2, sm: 4 },
+          px: { xs: 2, sm: 4 },
+          py: 4,
           mt: 8,
           width: { sm: `calc(100% - ${drawerWidth}px)` },
           display: "flex",
@@ -369,188 +492,158 @@ export default function AdminPage() {
       >
         {view === "stats" && (
           <>
-            <Typography variant="h4" fontWeight="bold" sx={{ color: "#1e3c72" }}>
-              Welcome, Admin
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 3, textAlign: "center", maxWidth: 700 }}>
-              Here’s an overview of your platform’s statistics and recent activity.
-            </Typography>
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography variant={isSm ? 'h5' : 'h4'} fontWeight={900} sx={{ color: "#000000", mb: 0.5,
+                textShadow: (t) => `0 1px 0 ${alpha(t.palette.common.black, 0.2)}`,
+              }}>
+                Welcome, {user?.username || 'Admin'}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3, textAlign: "center", maxWidth: 720 }}>
+                Here’s an overview of your platform’s statistics and recent activity.
+              </Typography>
+            </Box>
 
-            <Grid container spacing={3} justifyContent="center" sx={{ maxWidth: 1100 }}>
-              {[
-                { title: "Total Users", value: totalUsers },
-                { title: "Total Files Uploaded", value: totalFiles },
-                { title: "Total Personal Details", value: totalDetails },
-              ].map((card, index) => (
-                <Grid key={index} item xs={12} sm={6} md={4}>
-                  <Paper
-                    sx={{
-                      p: 4,
-                      textAlign: "center",
-                      borderRadius: 3,
-                      boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
-                      transition: "all 0.3s",
-                      "&:hover": {
-                        transform: "translateY(-6px)",
-                        boxShadow: "0 12px 36px rgba(0,0,0,0.15)",
-                      },
-                    }}
-                  >
-                    <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1, color: "#1976d2" }}>
-                      {card.title}
-                    </Typography>
-                    <Typography variant="h3">{loadingStats ? <CircularProgress size={36} /> : card.value}</Typography>
-                  </Paper>
-                </Grid>
-              ))}
-            </Grid>
+            {/* Stats grid using CSS grid for maximum compatibility */}
+            <Box sx={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(12, 1fr)',
+              gap: 2,
+              width: '100%',
+              maxWidth: 1100,
+            }}>
+              <Box sx={{ gridColumn: { xs: 'span 12', sm: 'span 6', md: 'span 4' } }}>
+                <StatCard title="Total Users" value={totalUsers} loading={loadingStats} icon={PeopleIcon} />
+              </Box>
+              <Box sx={{ gridColumn: { xs: 'span 12', sm: 'span 6', md: 'span 4' } }}>
+                <StatCard title="Total Files Uploaded" value={totalFiles} loading={loadingStats} icon={FolderIcon} />
+              </Box>
+              <Box sx={{ gridColumn: { xs: 'span 12', sm: 'span 12', md: 'span 4' } }}>
+                <StatCard title="Total Personal Details" value={totalDetails} loading={loadingStats} icon={DescriptionIcon} />
+              </Box>
+            </Box>
 
-            <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", justifyContent: "center", mt: 4 }}>
-              <Button variant="contained" color="primary" onClick={handleManageUsers}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mt: 1 }}>
+              <Button variant="contained" startIcon={<PeopleIcon />} onClick={handleManageUsers}>
                 Manage Users
               </Button>
-              <Button variant="contained" color="secondary" onClick={handleManageFiles}>
+              <Button variant="contained" color="secondary" startIcon={<FolderIcon />} onClick={handleManageFiles}>
                 Manage Files
               </Button>
-              <Button variant="outlined" color="secondary" onClick={handleManagePersonalDetails}>
+              <Button variant="outlined" startIcon={<DescriptionIcon />} onClick={handleManagePersonalDetails}>
                 Manage Personal Details
               </Button>
-            </Box>
+            </Stack>
           </>
         )}
 
-        {/* Tables for Users, Files, Personal Details */}
-        {["users", "files", "details"].includes(view) && (
-          <Box sx={{ width: "100%", maxWidth: 1100 }}>
-            <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2, flexWrap: "wrap", gap: 1 }}>
-              <Typography variant="h5" fontWeight="bold">
-                {view === "users"
-                  ? "All Users"
-                  : view === "files"
-                  ? "All Files"
-                  : "All Personal Details"}
+        {/* Listing views */}
+        {['users', 'files', 'details'].includes(view) && (
+          <Box sx={{ width: '100%', maxWidth: 1100 }}>
+            {/* Header with search and actions */}
+            <Box sx={{
+              position: 'sticky',
+              top: 72,
+              zIndex: 1,
+              backdropFilter: 'saturate(180%) blur(8px)',
+              backgroundColor: (t) => alpha(t.palette.background.default, 0.8),
+              borderRadius: 2,
+              p: 1.5,
+              mb: 2,
+              boxShadow: (t) => `0 6px 16px ${alpha(t.palette.common.black, 0.04)}`,
+              display: 'flex',
+              gap: 1,
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              justifyContent: 'space-between',
+            }}>
+              <Typography variant="h6" fontWeight={800} sx={{ mr: 1 }}>
+                {view === 'users' ? 'All Users' : view === 'files' ? 'All Files' : 'All Personal Details'}
               </Typography>
 
-              {/* Search Input */}
-              <TextField
-                size="small"
-                placeholder="Search..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                sx={{ minWidth: 200 }}
-              />
-
-              <Button variant="outlined" onClick={() => setView("stats")}>
-                Back to Dashboard
-              </Button>
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+                <Box sx={{ position: 'relative', minWidth: 240 }}>
+                  <TextField
+                    size="small"
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <Box sx={{ display: 'grid', placeItems: 'center', px: 1 }}>
+                          <SearchIcon fontSize="small" />
+                        </Box>
+                      ),
+                    }}
+                    sx={{ width: { xs: '100%', sm: 260 } }}
+                  />
+                </Box>
+                <Tooltip title="Refresh" arrow>
+                  <span>
+                    <IconButton
+                      onClick={() => {
+                        if (view === 'users') fetchAllUsers();
+                        if (view === 'files') fetchAllFiles();
+                        if (view === 'details') fetchAllPersonalDetailsList();
+                      }}
+                    >
+                      <RefreshIcon />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+                <Button variant="outlined" onClick={() => setView('stats')}>
+                  Back to Dashboard
+                </Button>
+              </Box>
             </Box>
 
-            {(view === "users" && loadingUsers) ||
-            (view === "files" && loadingFiles) ||
-            (view === "details" && loadingDetails) ? (
-              <CircularProgress />
-            ) : (
-              <TableContainer
-                component={Paper}
-                sx={{
-                  borderRadius: 3,
-                  boxShadow: "0 6px 20px rgba(0,0,0,0.08)",
-                  overflowX: "auto",
-                }}
-              >
+            {/* Table */}
+            {(tableConfig.loading) ? (
+              <Box sx={{ display: 'grid', gap: 1 }}>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Skeleton key={i} variant="rounded" height={56} />
+                ))}
+              </Box>
+            ) : tableConfig.rows?.length ? (
+              <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: (t) => `0 6px 20px ${alpha(t.palette.common.black, 0.08)}` }}>
                 <Table stickyHeader>
                   <TableHead>
-                    <TableRow sx={{ backgroundColor: theme.palette.grey[100] }}>
-                      {view === "users" && (
-                        <>
-                          <TableCell sx={{ fontWeight: "bold" }}>Username</TableCell>
-                          <TableCell sx={{ fontWeight: "bold" }}>Email</TableCell>
-                          <TableCell sx={{ fontWeight: "bold" }}>Role</TableCell>
-                          <TableCell sx={{ fontWeight: "bold" }}>Created At</TableCell>
-                        </>
-                      )}
-                      {view === "files" && (
-                        <>
-                          <TableCell sx={{ fontWeight: "bold" }}>File Name</TableCell>
-                          <TableCell sx={{ fontWeight: "bold" }}>Description</TableCell>
-                          <TableCell sx={{ fontWeight: "bold" }}>Uploaded By</TableCell>
-                          <TableCell sx={{ fontWeight: "bold" }}>Uploaded At</TableCell>
-                        </>
-                      )}
-                      {view === "details" && (
-                        <>
-                          <TableCell sx={{ fontWeight: "bold" }}>Full Name</TableCell>
-                          <TableCell sx={{ fontWeight: "bold" }}>Birthdate</TableCell>
-                          <TableCell sx={{ fontWeight: "bold" }}>Address</TableCell>
-                          <TableCell sx={{ fontWeight: "bold" }}>Phone</TableCell>
-                          <TableCell sx={{ fontWeight: "bold" }}>Email</TableCell>
-                        </>
-                      )}
+                    <TableRow>
+                      {tableConfig.columns.map((col) => (
+                        <TableCell key={col.key} sx={{ fontWeight: 800 }}>{col.label}</TableCell>
+                      ))}
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {filterData(view === "users" ? users : view === "files" ? files : personalDetails).map(
-                      (item) => {
-                        if (view === "users") {
-                          return (
-                            <TableRow key={item._id} sx={{ "&:hover": { backgroundColor: theme.palette.action.hover } }}>
-                              <TableCell>{item.username}</TableCell>
-                              <TableCell>{item.email}</TableCell>
-                              <TableCell>{item.role}</TableCell>
-                              <TableCell>{new Date(item.createdAt).toLocaleDateString()}</TableCell>
-                            </TableRow>
-                          );
-                        } else if (view === "files") {
-                          return (
-                            <TableRow key={item._id} sx={{ "&:hover": { backgroundColor: theme.palette.action.hover } }}>
-                              <TableCell>{item.originalName}</TableCell>
-                              <TableCell>{item.description || "-"}</TableCell>
-                              <TableCell>{item.uploadedBy?.username || "-"}</TableCell>
-                              <TableCell>{new Date(item.createdAt).toLocaleString()}</TableCell>
-                            </TableRow>
-                          );
-                        } else {
-                          return (
-                            <TableRow key={item._id} sx={{ "&:hover": { backgroundColor: theme.palette.action.hover } }}>
-                              <TableCell>{item.fullName}</TableCell>
-                              <TableCell>{item.birthdate}</TableCell>
-                              <TableCell>{item.address}</TableCell>
-                              <TableCell>{item.phoneNumber || "-"}</TableCell>
-                              <TableCell>{item.email || "-"}</TableCell>
-                            </TableRow>
-                          );
-                        }
-                      }
-                    )}
+                    {tableConfig.rows.map((row) => (
+                      <TableRow key={row._id} hover sx={{ cursor: 'default' }}>
+                        {tableConfig.columns.map((col) => (
+                          <TableCell key={col.key}>
+                            {col.render ? col.render(row[col.key]) : (row[col.key] ?? '-')}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </TableContainer>
+            ) : (
+              <EmptyState title="No results" subtitle="Try another query or refresh the list." />
             )}
           </Box>
         )}
       </Box>
 
+      {/* Snackbars */}
       <Snackbar
         open={logoutSnackbarOpen}
         autoHideDuration={1500}
-        message="Logged out successfully"
         onClose={() => setLogoutSnackbarOpen(false)}
-      />
-      <Snackbar
-  open={logoutSnackbarOpen}
-  autoHideDuration={1500}
-  onClose={() => setLogoutSnackbarOpen(false)}
-  anchorOrigin={{ vertical: "top", horizontal: "right" }}
->
-  <Alert
-    onClose={() => setLogoutSnackbarOpen(false)}
-    severity="success"
-    sx={{ width: "100%" }}
-    variant="filled"
-  >
-    Logged out successfully!
-  </Alert>
-</Snackbar>
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <Alert onClose={() => setLogoutSnackbarOpen(false)} severity="success" variant="filled" sx={{ width: "100%" }}>
+          Logged out successfully!
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

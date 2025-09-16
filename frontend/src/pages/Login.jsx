@@ -1,8 +1,19 @@
 import { useState, useContext } from "react";
 import {
-  Container, Box, TextField, Button, Typography,
-  Paper, Divider, Alert, Snackbar, CircularProgress
+  Container,
+  Box,
+  TextField,
+  Button,
+  Typography,
+  Paper,
+  Divider,
+  Alert,
+  Snackbar,
+  CircularProgress,
+  InputAdornment,
+  IconButton,
 } from "@mui/material";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "../api/axios";
 import { AuthContext } from "../context/AuthContext";
@@ -12,6 +23,7 @@ const Login = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const navigate = useNavigate();
   const { setUser } = useContext(AuthContext);
@@ -20,49 +32,48 @@ const Login = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError("");
-  setLoading(true);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
-  try {
-    const res = await axios.post("/auth/login", form, {
-      withCredentials: true,
-    });
+    try {
+      const res = await axios.post("/auth/login", form, {
+        withCredentials: true,
+      });
 
-    const { accessToken, refreshToken } = res.data;
-    localStorage.setItem("accessToken", accessToken);
-    localStorage.setItem("refreshToken", refreshToken); // <-- Save refresh token!
+      const { accessToken, refreshToken } = res.data;
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("refreshToken", refreshToken); // <-- Save refresh token!
 
-    const me = await axios.get("/auth/me", {
-      headers: { Authorization: `Bearer ${accessToken}` },
-      withCredentials: true,
-    });
+      const me = await axios.get("/auth/me", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        withCredentials: true,
+      });
 
-    setUser(me.data);
-    localStorage.setItem("user", JSON.stringify(me.data)); // <-- Save user data too
+      setUser(me.data);
+      localStorage.setItem("user", JSON.stringify(me.data)); // <-- Save user data too
 
-    setSnackbarOpen(true); // Show success snackbar
+      setSnackbarOpen(true); // Show success snackbar
 
-    setTimeout(() => {
-  if (me.data.role === "admin") {
-    navigate("/admin-dashboard"); // Go to admin page
-  } else {
-    navigate("/"); // Go to dashboard
-  }
-}, 1000);
-  } catch (err) {
-    setError(err.response?.data?.msg || "Login failed");
+      setTimeout(() => {
+        if (me.data.role === "admin") {
+          navigate("/admin-dashboard"); // Go to admin page
+        } else {
+          navigate("/"); // Go to dashboard
+        }
+      }, 1000);
+    } catch (err) {
+      setError(err.response?.data?.msg || "Login failed");
 
-    // Clean up tokens on failure
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    localStorage.removeItem("user");
-  } finally {
-    setLoading(false);
-  }
-};
-
+      // Clean up tokens on failure
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("user");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Container maxWidth="sm">
@@ -75,7 +86,11 @@ const handleSubmit = async (e) => {
         </Typography>
         <Divider sx={{ mb: 3 }} />
 
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
 
         <Box component="form" onSubmit={handleSubmit} noValidate>
           <TextField
@@ -91,12 +106,24 @@ const handleSubmit = async (e) => {
           <TextField
             name="password"
             label="Password"
-            type="password"
+            type={showPassword ? "text" : "password"}
             value={form.password}
             onChange={handleChange}
             fullWidth
             required
             margin="normal"
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    edge="end"
+                  >
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
           />
           <Button
             type="submit"
@@ -108,14 +135,14 @@ const handleSubmit = async (e) => {
             {loading ? <CircularProgress size={24} color="inherit" /> : "Login"}
           </Button>
           <Typography
-  variant="body2"
-  align="right"
-  sx={{ mt: 1, cursor: "pointer" }}
->
-  <Link to="/forgot-password" style={{ textDecoration: "none" }}>
-    Forgot Password?
-  </Link>
-</Typography>
+            variant="body2"
+            align="right"
+            sx={{ mt: 1, cursor: "pointer" }}
+          >
+            <Link to="/forgot-password" style={{ textDecoration: "none" }}>
+              Forgot Password?
+            </Link>
+          </Typography>
         </Box>
 
         <Typography variant="body2" align="center" sx={{ mt: 3 }}>
@@ -133,7 +160,6 @@ const handleSubmit = async (e) => {
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
         message="Login successful!"
       />
-      
     </Container>
   );
 };

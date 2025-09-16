@@ -10,8 +10,11 @@ import {
   Snackbar,
   Alert,
   LinearProgress,
-  CircularProgress,  // Added this import
+  CircularProgress,
+  IconButton,
+  InputAdornment,
 } from "@mui/material";
+import { Visibility, VisibilityOff } from "@mui/icons-material"; // 👈 Added icons
 import axios from "../api/axios";
 import zxcvbn from "zxcvbn"; // import password strength lib
 
@@ -28,7 +31,8 @@ const Register = () => {
     severity: "success",
   });
 
-  const [loading, setLoading] = useState(false); // Added loading state
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // 👈 toggle state
 
   const navigate = useNavigate();
 
@@ -38,10 +42,10 @@ const Register = () => {
 
   // Calculate password strength score (0-4)
   const strength = zxcvbn(form.password);
-  const strengthScore = strength.score * 25; // scale 0-100%
+  const strengthScore = strength.score * 25;
   const strengthLabel = ["Too Weak", "Weak", "Fair", "Good", "Strong"][strength.score];
 
-  const isPasswordStrongEnough = strength.score >= 2; // 2 = fair or stronger
+  const isPasswordStrongEnough = strength.score >= 2;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -55,7 +59,7 @@ const Register = () => {
       return;
     }
 
-    setLoading(true);  // Start loading
+    setLoading(true);
     try {
       await axios.post("/auth/register", form);
       setSnack({
@@ -87,7 +91,7 @@ const Register = () => {
         });
       }
     } finally {
-      setLoading(false);  // Stop loading
+      setLoading(false);
     }
   };
 
@@ -119,11 +123,23 @@ const Register = () => {
             <TextField
               name="password"
               label="Password"
-              type="password"
+              type={showPassword ? "text" : "password"} // 👈 toggle
               value={form.password}
               onChange={handleChange}
               fullWidth
               required
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      edge="end"
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
             />
 
             {/* Password strength bar and label */}
@@ -156,8 +172,8 @@ const Register = () => {
               variant="contained"
               size="large"
               fullWidth
-              disabled={!isPasswordStrongEnough || loading} // disable on loading
-              startIcon={loading ? <CircularProgress size={20} /> : null} // show spinner if loading
+              disabled={!isPasswordStrongEnough || loading}
+              startIcon={loading ? <CircularProgress size={20} /> : null}
             >
               {loading ? "Registering..." : "Register"}
             </Button>
